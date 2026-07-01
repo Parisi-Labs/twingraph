@@ -1,0 +1,4 @@
+interface:
+  display_name: "TwinGraph Typepacks"
+  short_description: "Extend TwinGraph types and units"
+  default_prompt: "Use $twingraph-typepacks to add a domain type pack safely."

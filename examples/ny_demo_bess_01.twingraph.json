@@ -1,0 +1,246 @@
+{
+  "schema_version": "twingraph/0.1",
+  "graph_id": "01JZBESS0DEMO0NY0000000001",
+  "version_id": "01JZBESS0DEMO0NY00VERSION01",
+  "workspace_id": "00000000000000000000000000",
+  "name": "NY_Demo_BESS_01",
+  "namespace": "metis.demo.ny_bess_01",
+  "status": "draft",
+  "created_at": "2026-06-20T14:00:00Z",
+  "created_by": "twingraph.examples",
+  "parent_version_id": null,
+  "provenance": {
+    "note": "Illustrative single-battery demo twin for public TwinGraph documentation and tests."
+  },
+  "entities": [
+    {
+      "id": "bat",
+      "type_ref": "metis.energy.Battery@1",
+      "name": "Demo BESS",
+      "namespace": "metis.demo.ny_bess_01",
+      "properties": {
+        "power_max_mw": 3.0,
+        "energy_max_mwh": 12.0,
+        "eta_charge": 0.95,
+        "eta_discharge": 0.95,
+        "soc_init_mwh": 0.0,
+        "soc_min_mwh": 0.0,
+        "terminal_reserve_mwh": 0.0,
+        "degradation_cost_per_mwh": 2.0,
+        "dt_h": 1.0
+      },
+      "tags": ["storage", "demo"],
+      "confidence": 1.0,
+      "confirmation_state": "confirmed"
+    },
+    {
+      "id": "node",
+      "type_ref": "metis.energy.MarketNode@1",
+      "name": "NYISO Zone J",
+      "namespace": "metis.demo.ny_bess_01",
+      "properties": {"market": "NYISO", "location_id": "ZONE_J"},
+      "confirmation_state": "confirmed"
+    },
+    {
+      "id": "intertie",
+      "type_ref": "metis.energy.Interconnect@1",
+      "name": "POI limit",
+      "namespace": "metis.demo.ny_bess_01",
+      "properties": {"import_limit_mw": 3.0, "export_limit_mw": 3.0},
+      "confirmation_state": "confirmed"
+    }
+  ],
+  "relations": [
+    {"id": "r_bat_node", "type_ref": "connected_to", "source_entity_id": "bat", "target_entity_id": "node"},
+    {"id": "r_bat_poi", "type_ref": "constrained_by", "source_entity_id": "bat", "target_entity_id": "intertie"},
+    {"id": "r_node_settles", "type_ref": "settles_at", "source_entity_id": "bat", "target_entity_id": "node"}
+  ],
+  "variables": [
+    {
+      "id": "soc",
+      "owner_ref": "bat",
+      "name": "state_of_charge",
+      "display_name": "State of charge",
+      "role": "state",
+      "unit": "MW.h",
+      "temporal_semantics": "end_of_interval_state",
+      "bounds": {"min": 0.0, "max": 12.0},
+      "resolution": "PT1H"
+    },
+    {
+      "id": "charge_p",
+      "owner_ref": "bat",
+      "name": "charge_power",
+      "display_name": "Charge power",
+      "role": "control",
+      "unit": "MW",
+      "temporal_semantics": "interval_average",
+      "bounds": {"min": 0.0, "max_from": "property:power_max_mw"},
+      "resolution": "PT1H"
+    },
+    {
+      "id": "discharge_p",
+      "owner_ref": "bat",
+      "name": "discharge_power",
+      "display_name": "Discharge power",
+      "role": "control",
+      "unit": "MW",
+      "temporal_semantics": "interval_average",
+      "bounds": {"min": 0.0, "max_from": "property:power_max_mw"},
+      "resolution": "PT1H"
+    },
+    {
+      "id": "price",
+      "owner_ref": "node",
+      "name": "price",
+      "display_name": "Settlement price",
+      "role": "exogenous",
+      "unit": "USD/MW.h",
+      "temporal_semantics": "interval_average",
+      "resolution": "PT1H"
+    }
+  ],
+  "data_bindings": [
+    {
+      "id": "db_price",
+      "variable_id": "price",
+      "source": {
+        "adapter": "central_warehouse",
+        "semantic_view": "fixture:ny_demo_prices",
+        "filters": {"market": "NYISO", "location_id": "ZONE_J"}
+      },
+      "event_time_column": "interval_start_utc",
+      "available_at_column": "published_at_utc",
+      "value_column": "price_usd_per_mwh",
+      "unit": "USD/MW.h",
+      "grain": ["interval_start_utc"],
+      "query_policy": {
+        "as_of_required": true,
+        "deduplication": "latest_available_at",
+        "latest_before_issue_time": true
+      },
+      "validation": {"expected_resolution": "PT1H"},
+      "confidence": 1.0,
+      "provenance": {
+        "source_kind": "document_excerpt",
+        "note": "ILLUSTRATIVE price path — not real market data."
+      }
+    }
+  ],
+  "model_bindings": [
+    {
+      "id": "mb_battery",
+      "kind": "native_component",
+      "model_ref": "registry://metis.components.battery_linear@1.0.0",
+      "scope_ref": "bat",
+      "inputs": {"price": "price"},
+      "outputs": {"state_of_charge": "soc"},
+      "parameters": {
+        "power_max_mw": "property:power_max_mw",
+        "energy_max_mwh": "property:energy_max_mwh",
+        "eta_charge": "property:eta_charge",
+        "eta_discharge": "property:eta_discharge",
+        "soc_init_mwh": "property:soc_init_mwh",
+        "terminal_reserve_mwh": "property:terminal_reserve_mwh",
+        "degradation_cost_per_mwh": "property:degradation_cost_per_mwh"
+      },
+      "execution": {"deterministic": true, "interval": "PT1H"}
+    }
+  ],
+  "actions": [
+    {
+      "id": "act_dispatch",
+      "name": "Dispatch power",
+      "controller_entity_id": "bat",
+      "target_entity_id": "bat",
+      "control_variables": ["charge_p", "discharge_p"],
+      "cadence": "PT1H",
+      "bounds": {
+        "charge_power": {"unit": "MW", "min": 0.0, "max_from": "property:power_max_mw"},
+        "discharge_power": {"unit": "MW", "min": 0.0, "max_from": "property:power_max_mw"}
+      },
+      "mutual_exclusion": [["charge_p", "discharge_p"]],
+      "execution_mode": "advisory",
+      "requires_approval": true
+    }
+  ],
+  "constraints": [
+    {
+      "id": "c_soc",
+      "name": "SOC bounds",
+      "class": "hard_physical",
+      "scope_ref": "bat",
+      "expression": {"language": "metis_expr/0.1", "value": "0 <= soc <= 12"},
+      "enforcement": {"stages": ["simulate", "outcome"]},
+      "unit": "MW.h",
+      "on_violation": "reject_result"
+    },
+    {
+      "id": "c_terminal",
+      "name": "Terminal reserve",
+      "class": "hard_commercial",
+      "scope_ref": "bat",
+      "expression": {"language": "metis_expr/0.1", "value": "soc >= 0"},
+      "enforcement": {"stages": ["outcome"]},
+      "unit": "MW.h",
+      "on_violation": "mark_uncertified"
+    },
+    {
+      "id": "c_poi",
+      "name": "Interconnection limit",
+      "class": "hard_physical",
+      "scope_ref": "intertie",
+      "evaluator_ref": {
+        "pattern_ref": "interconnection_limit",
+        "params": {"import_limit_mw": "property:import_limit_mw", "export_limit_mw": "property:export_limit_mw"}
+      },
+      "enforcement": {"stages": ["simulate"]},
+      "unit": "MW",
+      "on_violation": "reject_result"
+    },
+    {
+      "id": "c_mutex",
+      "name": "No simultaneous charge and discharge",
+      "class": "hard_physical",
+      "scope_ref": "bat",
+      "evaluator_ref": {
+        "pattern_ref": "mutual_exclusion",
+        "params": {"group": ["charge_p", "discharge_p"]}
+      },
+      "enforcement": {"stages": ["simulate"]},
+      "on_violation": "reject_result"
+    }
+  ],
+  "objectives": [
+    {
+      "id": "o_ev",
+      "name": "Expected net revenue minus risk and degradation",
+      "terms": [
+        {"id": "t_ev", "direction": "maximize", "measure_ref": "metric:expected_net_revenue", "weight": 1.0},
+        {"id": "t_cvar", "direction": "minimize", "measure_ref": "metric:cvar_loss_10", "weight": 1.0},
+        {"id": "t_deg", "direction": "minimize", "measure_ref": "metric:degradation_cost", "weight": 1.0}
+      ],
+      "aggregation": {
+        "kind": "expected_value_plus_risk",
+        "risk_measure": "CVaR",
+        "alpha": 0.1,
+        "lambda": 0.5
+      }
+    }
+  ],
+  "validators": [
+    {"id": "v_soc", "name": "SOC never out of bounds", "evaluator_ref": "soc_bounds", "params": {"var": "soc", "lo": 0.0, "hi": 12.0}},
+    {"id": "v_energy", "name": "Energy conservation", "evaluator_ref": "battery_energy_balance", "params": {"tol": 1e-6}},
+    {"id": "v_leak", "name": "Issue-time leakage safety", "evaluator_ref": "issue_time_leakage", "params": {}}
+  ],
+  "evidence": [
+    {
+      "id": "ev_demo",
+      "kind": "document_excerpt",
+      "source_ref": "examples/ny_demo_bess_01.twingraph.json",
+      "claim": "Illustrative price path used to demonstrate compile-time leakage checks and executable-plan emission.",
+      "confidence": 1.0
+    }
+  ],
+  "extensions": {}
+}

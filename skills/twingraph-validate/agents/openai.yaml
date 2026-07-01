@@ -1,0 +1,4 @@
+interface:
+  display_name: "TwinGraph Validate"
+  short_description: "Validate TwinGraph schema and compile"
+  default_prompt: "Use $twingraph-validate to inspect and compile this TwinGraph document."

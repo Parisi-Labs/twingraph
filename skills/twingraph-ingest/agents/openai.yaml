@@ -1,0 +1,4 @@
+interface:
+  display_name: "TwinGraph Ingest"
+  short_description: "Turn facility sources into twins"
+  default_prompt: "Use $twingraph-ingest to extract a draft TwinGraph from these facility sources."

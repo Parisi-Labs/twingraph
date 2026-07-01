@@ -1,0 +1,1854 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://twingraph.parisi-labs.com/schema/twingraph-0.1.schema.json",
+  "$defs": {
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "controller_entity_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Controller Entity Id"
+        },
+        "target_entity_id": {
+          "title": "Target Entity Id",
+          "type": "string"
+        },
+        "control_variables": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Control Variables",
+          "type": "array"
+        },
+        "cadence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cadence"
+        },
+        "bounds": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ActionBound"
+          },
+          "title": "Bounds",
+          "type": "object"
+        },
+        "mutual_exclusion": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Mutual Exclusion",
+          "type": "array"
+        },
+        "execution_mode": {
+          "default": "advisory",
+          "enum": [
+            "advisory",
+            "automatic"
+          ],
+          "title": "Execution Mode",
+          "type": "string"
+        },
+        "requires_approval": {
+          "default": true,
+          "title": "Requires Approval",
+          "type": "boolean"
+        },
+        "permissions": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ActionPermissions"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "target_entity_id"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "ActionBound": {
+      "additionalProperties": false,
+      "properties": {
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "min_from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min From"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "max_from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max From"
+        }
+      },
+      "title": "ActionBound",
+      "type": "object"
+    },
+    "ActionPermissions": {
+      "additionalProperties": false,
+      "properties": {
+        "propose": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Propose",
+          "type": "array"
+        },
+        "approve": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Approve",
+          "type": "array"
+        }
+      },
+      "title": "ActionPermissions",
+      "type": "object"
+    },
+    "BindingValidation": {
+      "additionalProperties": false,
+      "properties": {
+        "expected_resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Resolution"
+        },
+        "max_staleness": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Staleness"
+        },
+        "allowed_min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Allowed Min"
+        },
+        "allowed_max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Allowed Max"
+        }
+      },
+      "title": "BindingValidation",
+      "type": "object"
+    },
+    "ConfirmationState": {
+      "enum": [
+        "inferred",
+        "proposed",
+        "confirmed",
+        "disputed",
+        "deprecated"
+      ],
+      "title": "ConfirmationState",
+      "type": "string"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "class": {
+          "enum": [
+            "hard_physical",
+            "hard_commercial",
+            "hard_permission",
+            "soft_operational",
+            "soft_risk",
+            "informational"
+          ],
+          "title": "Class",
+          "type": "string"
+        },
+        "scope_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Ref"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConstraintExpression"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "evaluator_ref": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ConstraintEvaluator"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "enforcement": {
+          "$ref": "#/$defs/ConstraintEnforcement"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "tolerance": {
+          "default": 0.0,
+          "title": "Tolerance",
+          "type": "number"
+        },
+        "on_violation": {
+          "default": "reject_result",
+          "enum": [
+            "reject_result",
+            "mark_uncertified",
+            "warn",
+            "penalize"
+          ],
+          "title": "On Violation",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Provenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "class"
+      ],
+      "title": "Constraint",
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "expression"
+          ],
+          "not": {
+            "required": [
+              "evaluator_ref"
+            ]
+          }
+        },
+        {
+          "required": [
+            "evaluator_ref"
+          ],
+          "not": {
+            "required": [
+              "expression"
+            ]
+          }
+        }
+      ]
+    },
+    "ConstraintEnforcement": {
+      "additionalProperties": false,
+      "properties": {
+        "stages": {
+          "items": {
+            "enum": [
+              "compile",
+              "optimize",
+              "simulate",
+              "outcome"
+            ],
+            "type": "string"
+          },
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "title": "ConstraintEnforcement",
+      "type": "object"
+    },
+    "ConstraintEvaluator": {
+      "additionalProperties": false,
+      "properties": {
+        "pattern_ref": {
+          "title": "Pattern Ref",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        }
+      },
+      "required": [
+        "pattern_ref"
+      ],
+      "title": "ConstraintEvaluator",
+      "type": "object"
+    },
+    "ConstraintExpression": {
+      "additionalProperties": false,
+      "properties": {
+        "language": {
+          "default": "metis_expr/0.1",
+          "title": "Language",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value"
+      ],
+      "title": "ConstraintExpression",
+      "type": "object"
+    },
+    "DataBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "variable_id": {
+          "title": "Variable Id",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/DataSource"
+        },
+        "event_time_column": {
+          "description": "REQUIRED — the event time column",
+          "title": "Event Time Column",
+          "type": "string"
+        },
+        "available_at_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Available At Column"
+        },
+        "value_column": {
+          "title": "Value Column",
+          "type": "string"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "unit_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit Column"
+        },
+        "unit_transform": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnitTransform"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "grain": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Grain",
+          "type": "array"
+        },
+        "query_policy": {
+          "$ref": "#/$defs/QueryPolicy"
+        },
+        "conservative_availability_policy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Conservative Availability Policy"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BindingValidation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confidence": {
+          "default": 1.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Provenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "variable_id",
+        "source",
+        "event_time_column",
+        "value_column",
+        "unit"
+      ],
+      "title": "DataBinding",
+      "type": "object",
+      "anyOf": [
+        {
+          "required": [
+            "available_at_column"
+          ]
+        },
+        {
+          "required": [
+            "conservative_availability_policy",
+            "query_policy"
+          ],
+          "properties": {
+            "query_policy": {
+              "required": [
+                "as_of_required"
+              ],
+              "properties": {
+                "as_of_required": {
+                  "const": false
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "DataSource": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter": {
+          "default": "central_warehouse",
+          "title": "Adapter",
+          "type": "string"
+        },
+        "semantic_view": {
+          "title": "Semantic View",
+          "type": "string"
+        },
+        "filters": {
+          "additionalProperties": true,
+          "title": "Filters",
+          "type": "object"
+        }
+      },
+      "required": [
+        "semantic_view"
+      ],
+      "title": "DataSource",
+      "type": "object"
+    },
+    "Entity": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type_ref": {
+          "description": "e.g. metis.energy.Battery@1",
+          "pattern": "^[a-z][A-Za-z0-9_.]*@\\d+$",
+          "title": "Type Ref",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "namespace": {
+          "default": "metis.demo",
+          "title": "Namespace",
+          "type": "string"
+        },
+        "lifecycle_state": {
+          "$ref": "#/$defs/LifecycleState",
+          "default": "active"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "title": "Properties"
+        },
+        "ports": {
+          "additionalProperties": {
+            "$ref": "#/$defs/EntityPort"
+          },
+          "title": "Ports",
+          "type": "object"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Provenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "confidence": {
+          "default": 1.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "confirmation_state": {
+          "$ref": "#/$defs/ConfirmationState",
+          "default": "confirmed"
+        }
+      },
+      "required": [
+        "id",
+        "type_ref",
+        "name"
+      ],
+      "title": "Entity",
+      "type": "object"
+    },
+    "EntityPort": {
+      "additionalProperties": false,
+      "description": "A concrete interface exposed by an entity instance.\n\n``kind`` should match one of the entity type's declared port kinds when the\ntype registry declares ports. The dict key on ``Entity.ports`` is the local\nport id used by relations, so a plant can expose ``poi_34_5kv`` while the\ntype-level kind remains ``ac_power``.",
+      "properties": {
+        "kind": {
+          "title": "Kind",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "direction": {
+          "default": "bidirectional",
+          "enum": [
+            "input",
+            "output",
+            "bidirectional"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "variable_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Variable Id"
+        },
+        "relation_types": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Relation Types",
+          "type": "array"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "EntityPort",
+      "type": "object"
+    },
+    "Evidence": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "document_excerpt",
+            "warehouse_profile",
+            "user_confirmation",
+            "test_result",
+            "model_metric",
+            "asset_configuration",
+            "prior_version",
+            "generated_proposal"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "locator": {
+          "additionalProperties": true,
+          "title": "Locator",
+          "type": "object"
+        },
+        "claim": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Claim"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created By"
+        },
+        "confidence": {
+          "default": 1.0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "source_ref"
+      ],
+      "title": "Evidence",
+      "type": "object"
+    },
+    "LifecycleState": {
+      "enum": [
+        "planned",
+        "active",
+        "degraded",
+        "offline",
+        "retired"
+      ],
+      "title": "LifecycleState",
+      "type": "string"
+    },
+    "ModelBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "native_component",
+            "forecast_model",
+            "derived_expression",
+            "optimizer",
+            "rule_policy",
+            "calibration_model",
+            "explanation_template",
+            "fmu",
+            "modelica_class"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "model_ref": {
+          "pattern": "^registry://[a-z][a-z0-9_.]*@\\d+\\.\\d+\\.\\d+$",
+          "title": "Model Ref",
+          "type": "string"
+        },
+        "scope_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Ref"
+        },
+        "inputs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "object"
+        },
+        "outputs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Outputs",
+          "type": "object"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "execution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelExecution"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "model_ref"
+      ],
+      "title": "ModelBinding",
+      "type": "object"
+    },
+    "ModelExecution": {
+      "additionalProperties": false,
+      "properties": {
+        "deterministic": {
+          "default": true,
+          "title": "Deterministic",
+          "type": "boolean"
+        },
+        "interval": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interval"
+        }
+      },
+      "title": "ModelExecution",
+      "type": "object"
+    },
+    "Objective": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/ObjectiveTerm"
+          },
+          "title": "Terms",
+          "type": "array"
+        },
+        "aggregation": {
+          "$ref": "#/$defs/ObjectiveAggregation"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "aggregation"
+      ],
+      "title": "Objective",
+      "type": "object"
+    },
+    "ObjectiveAggregation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "expected_value",
+            "expected_value_plus_risk"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "risk_measure": {
+          "default": "none",
+          "enum": [
+            "none",
+            "CVaR"
+          ],
+          "title": "Risk Measure",
+          "type": "string"
+        },
+        "alpha": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alpha"
+        },
+        "lambda": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lambda"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "ObjectiveAggregation",
+      "type": "object"
+    },
+    "ObjectiveTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "maximize",
+            "minimize"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "measure_ref": {
+          "description": "var:<id> | <variable_id> | metric:<name>",
+          "title": "Measure Ref",
+          "type": "string"
+        },
+        "weight": {
+          "default": 1.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "direction",
+        "measure_ref"
+      ],
+      "title": "ObjectiveTerm",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "source_kind": {
+          "enum": [
+            "asset_configuration",
+            "warehouse_profile",
+            "document_excerpt",
+            "user_confirmation",
+            "test_result",
+            "model_metric",
+            "prior_version",
+            "generated_proposal"
+          ],
+          "title": "Source Kind",
+          "type": "string"
+        },
+        "source_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Ref"
+        },
+        "extracted_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extracted By"
+        },
+        "created_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created At"
+        },
+        "created_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Created By"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "source_kind"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    },
+    "QueryPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "as_of_required": {
+          "default": true,
+          "title": "As Of Required",
+          "type": "boolean"
+        },
+        "deduplication": {
+          "default": "latest_available_at",
+          "title": "Deduplication",
+          "type": "string"
+        },
+        "latest_before_issue_time": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latest Before Issue Time"
+        },
+        "max_lookback": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Lookback"
+        },
+        "missing_value_policy": {
+          "default": "fail_required_horizon",
+          "title": "Missing Value Policy",
+          "type": "string"
+        }
+      },
+      "title": "QueryPolicy",
+      "type": "object"
+    },
+    "Relation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type_ref": {
+          "description": "bare verb (metis.relation.<x>@1) or namespaced foreign ref",
+          "pattern": "^[a-z][A-Za-z0-9_]*$|^[a-z][A-Za-z0-9_.]*@\\d+$",
+          "title": "Type Ref",
+          "type": "string"
+        },
+        "source_entity_id": {
+          "title": "Source Entity Id",
+          "type": "string"
+        },
+        "target_entity_id": {
+          "title": "Target Entity Id",
+          "type": "string"
+        },
+        "directionality": {
+          "default": "directed",
+          "enum": [
+            "directed",
+            "undirected"
+          ],
+          "title": "Directionality",
+          "type": "string"
+        },
+        "source_port": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Port"
+        },
+        "target_port": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Port"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "title": "Properties"
+        },
+        "confirmation_state": {
+          "$ref": "#/$defs/ConfirmationState",
+          "default": "confirmed"
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Provenance"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "type_ref",
+        "source_entity_id",
+        "target_entity_id"
+      ],
+      "title": "Relation",
+      "type": "object"
+    },
+    "UnitTransform": {
+      "additionalProperties": false,
+      "properties": {
+        "from_unit": {
+          "title": "From Unit",
+          "type": "string"
+        },
+        "to_unit": {
+          "title": "To Unit",
+          "type": "string"
+        },
+        "scale": {
+          "default": 1.0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "offset": {
+          "default": 0.0,
+          "title": "Offset",
+          "type": "number"
+        }
+      },
+      "required": [
+        "from_unit",
+        "to_unit"
+      ],
+      "title": "UnitTransform",
+      "type": "object"
+    },
+    "Validator": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "evaluator_ref": {
+          "description": "Registered pattern name",
+          "title": "Evaluator Ref",
+          "type": "string"
+        },
+        "params": {
+          "additionalProperties": true,
+          "title": "Params",
+          "type": "object"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        },
+        "scope_ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scope Ref"
+        }
+      },
+      "required": [
+        "id",
+        "evaluator_ref"
+      ],
+      "title": "Validator",
+      "type": "object"
+    },
+    "VarBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "min_from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min From"
+        },
+        "max_from": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max From"
+        }
+      },
+      "title": "VarBounds",
+      "type": "object"
+    },
+    "VarInitFallback": {
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "title": "Strategy",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "strategy"
+      ],
+      "title": "VarInitFallback",
+      "type": "object"
+    },
+    "VarInitialization": {
+      "additionalProperties": false,
+      "properties": {
+        "strategy": {
+          "title": "Strategy",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "expression": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expression"
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VarInitFallback"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "strategy"
+      ],
+      "title": "VarInitialization",
+      "type": "object"
+    },
+    "VarUncertainty": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "deterministic",
+          "enum": [
+            "deterministic",
+            "measured",
+            "forecast_distribution"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "tolerance": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tolerance"
+        },
+        "required_quantiles": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Required Quantiles"
+        }
+      },
+      "title": "VarUncertainty",
+      "type": "object"
+    },
+    "Variable": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "owner_ref": {
+          "description": "Entity OR relation id that owns this variable",
+          "title": "Owner Ref",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Name"
+        },
+        "role": {
+          "enum": [
+            "state",
+            "control",
+            "exogenous",
+            "observed",
+            "derived",
+            "latent",
+            "parameter",
+            "outcome"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "data_type": {
+          "default": "float",
+          "enum": [
+            "float",
+            "integer",
+            "boolean",
+            "category",
+            "string",
+            "vector",
+            "distribution"
+          ],
+          "title": "Data Type",
+          "type": "string"
+        },
+        "unit": {
+          "default": "dimensionless",
+          "title": "Unit",
+          "type": "string"
+        },
+        "temporal_semantics": {
+          "default": "instant",
+          "enum": [
+            "instant",
+            "interval_average",
+            "interval_sum",
+            "start_of_interval_state",
+            "end_of_interval_state",
+            "publication_event"
+          ],
+          "title": "Temporal Semantics",
+          "type": "string"
+        },
+        "bounds": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VarBounds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "resolution": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resolution"
+        },
+        "initialization": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VarInitialization"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "uncertainty": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VarUncertainty"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "required_for": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required For",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "owner_ref",
+        "name",
+        "role"
+      ],
+      "title": "Variable",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Canonical JSON Schema for a twingraph/0.1 decision-twin document. Open-source IR (Apache-2.0). Source of truth: the pydantic models in the `twingraph` package.",
+  "properties": {
+    "schema_version": {
+      "const": "twingraph/0.1",
+      "default": "twingraph/0.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "graph_id": {
+      "title": "Graph Id",
+      "type": "string"
+    },
+    "version_id": {
+      "title": "Version Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "title": "Workspace Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "namespace": {
+      "default": "metis.demo",
+      "title": "Namespace",
+      "type": "string"
+    },
+    "status": {
+      "default": "draft",
+      "enum": [
+        "draft",
+        "active",
+        "deprecated"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "created_by": {
+      "title": "Created By",
+      "type": "string"
+    },
+    "parent_version_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parent Version Id"
+    },
+    "content_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Content Hash"
+    },
+    "provenance": {
+      "additionalProperties": true,
+      "title": "Provenance",
+      "type": "object"
+    },
+    "entities": {
+      "items": {
+        "$ref": "#/$defs/Entity"
+      },
+      "title": "Entities",
+      "type": "array"
+    },
+    "relations": {
+      "items": {
+        "$ref": "#/$defs/Relation"
+      },
+      "title": "Relations",
+      "type": "array"
+    },
+    "variables": {
+      "items": {
+        "$ref": "#/$defs/Variable"
+      },
+      "title": "Variables",
+      "type": "array"
+    },
+    "data_bindings": {
+      "items": {
+        "$ref": "#/$defs/DataBinding"
+      },
+      "title": "Data Bindings",
+      "type": "array"
+    },
+    "model_bindings": {
+      "items": {
+        "$ref": "#/$defs/ModelBinding"
+      },
+      "title": "Model Bindings",
+      "type": "array"
+    },
+    "actions": {
+      "items": {
+        "$ref": "#/$defs/Action"
+      },
+      "title": "Actions",
+      "type": "array"
+    },
+    "constraints": {
+      "items": {
+        "$ref": "#/$defs/Constraint"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "objectives": {
+      "items": {
+        "$ref": "#/$defs/Objective"
+      },
+      "title": "Objectives",
+      "type": "array"
+    },
+    "validators": {
+      "items": {
+        "$ref": "#/$defs/Validator"
+      },
+      "title": "Validators",
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/Evidence"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "extensions": {
+      "additionalProperties": true,
+      "title": "Extensions",
+      "type": "object"
+    }
+  },
+  "required": [
+    "graph_id",
+    "version_id",
+    "workspace_id",
+    "name",
+    "created_at",
+    "created_by"
+  ],
+  "title": "TwinGraph 0.1",
+  "type": "object"
+}

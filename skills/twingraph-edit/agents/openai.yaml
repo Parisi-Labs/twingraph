@@ -1,0 +1,4 @@
+interface:
+  display_name: "TwinGraph Edit"
+  short_description: "Patch and update TwinGraphs safely"
+  default_prompt: "Use $twingraph-edit to update this TwinGraph with a semantic patch."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TwinGraph Create"
+  short_description: "Author new TwinGraph documents"
+  default_prompt: "Use $twingraph-create to draft a new power-first TwinGraph document."

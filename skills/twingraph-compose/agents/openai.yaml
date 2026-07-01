@@ -1,0 +1,4 @@
+interface:
+  display_name: "TwinGraph Compose"
+  short_description: "Compose independent digital twins"
+  default_prompt: "Use $twingraph-compose to join these facility twins through typed interfaces."

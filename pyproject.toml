@@ -1,0 +1,69 @@
+[project]
+name = "twingraph"
+version = "0.3.0"
+description = "The typed, executable, versioned decision-twin intermediate representation"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Parisi Labs" }]
+keywords = [
+    "digital-twin",
+    "decision-intelligence",
+    "intermediate-representation",
+    "optimization",
+    "schema",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Typing :: Typed",
+]
+dependencies = ["pydantic>=2"]
+
+[project.optional-dependencies]
+dev = ["jsonschema>=4.22", "pytest>=8", "ruff>=0.6"]
+
+[project.urls]
+Homepage = "https://github.com/parisi-labs/twingraph"
+Repository = "https://github.com/parisi-labs/twingraph"
+Issues = "https://github.com/parisi-labs/twingraph/issues"
+Changelog = "https://github.com/parisi-labs/twingraph/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/twingraph"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "twingraph/skills"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/LICENSE",
+    "/README.md",
+    "/SECURITY.md",
+    "/SPEC.md",
+    "/examples",
+    "/schema",
+    "/skills",
+    "/src",
+    "/tests",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src", "tests"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src/twingraph"]
