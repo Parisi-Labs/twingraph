@@ -303,6 +303,16 @@ flag, not the topo-order position, signals foreign dispatch. A well-formed `fmu`
 binding compiles ok (component flagged external); a malformed io_contract errors
 `TG_IO_CONTRACT`.
 
+The `twingraph.fmi` module closes the authoring gap: `parse_model_description()`
+/ `read_fmu_model_description()` parse an FMU's `modelDescription.xml` (FMI 2.x
+and 3.x, including `declaredType` unit lookups), and `io_contract_from_fmu()`
+derives the binding's io_contract mechanically — causality `input`/`output`/
+parameter maps to contract inputs/outputs/params, units kept as the FMU declares
+them. The `ucum-subset/0.4` table folds common SI spellings (`W`, `J`, `K`,
+`Pa`, `kg`) so FMU ports unit-check against twin variables; `K` is deliberately
+NOT scale-linked to `degC` (affine conversions are out of table scope, the
+mismatch surfaces as `TG_UNIT_MISMATCH`).
+
 ## 9. Out of scope for 0.2
 
 Other cross-domain primitives beyond composition/open-relations, the SSP/SysML/
