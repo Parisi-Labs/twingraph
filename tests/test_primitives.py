@@ -1,6 +1,5 @@
 import pytest
 from pydantic import ValidationError
-
 from twingraph import (
     Action,
     Constraint,

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from twingraph import TwinGraph, canonicalize, content_hash
 from twingraph.canonical import canonical_json, hash_input
@@ -85,6 +85,6 @@ def test_compute_content_hash_excludes_volatile_fields(demo_doc):
     g = _g(draft)
     h = g.compute_content_hash()
     # Mutating created_at / version_id must not change the hash.
-    g.created_at = datetime(2050, 1, 1, tzinfo=timezone.utc)
+    g.created_at = datetime(2050, 1, 1, tzinfo=UTC)
     g.version_id = "01JZZZZZZZZZZZZZZZZZZZZZZZZ0"
     assert g.compute_content_hash() == h

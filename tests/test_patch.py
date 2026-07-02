@@ -1,5 +1,4 @@
 import pytest
-
 import twingraph as tg
 from twingraph import (
     Constraint,
@@ -7,7 +6,7 @@ from twingraph import (
     TwinGraph,
     apply_patch,
 )
-from twingraph.errors import ImmutableGraphError, OutOfOrderPatchError
+from twingraph.errors import ImmutableGraphError, OutOfOrderPatchError, TwinGraphError
 from twingraph.patch import PatchStatus
 from twingraph.primitives import ConstraintExpression
 
@@ -123,7 +122,7 @@ def test_op_order_matters(demo_doc):
             },
         ],
     )
-    with pytest.raises(Exception):
+    with pytest.raises(TwinGraphError):
         apply_patch(g, bad)
 
 

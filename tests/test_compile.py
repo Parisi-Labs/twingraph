@@ -1,7 +1,6 @@
 import twingraph as tg
-from twingraph.errors import CODES
-
 from helpers import mutate
+from twingraph.errors import CODES
 
 
 def _compile(doc, model_registry):

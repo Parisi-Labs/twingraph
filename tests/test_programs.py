@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import twingraph as tg
+from helpers import build_solar_twin
 from twingraph.programs import (
     BUILTIN_PROGRAM_REGISTRY,
     InMemoryProgramRegistry,
     ProfileRequirement,
     ProgramProfile,
 )
-
-from helpers import build_solar_twin
 
 # The exact legacy stage-10 labels in the exact legacy order. This is the
 # load-bearing back-compat invariant — program_compatibility[0] for the demo.
