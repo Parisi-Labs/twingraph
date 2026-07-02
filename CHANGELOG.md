@@ -6,6 +6,8 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [0.0.2] — 2026-07-02
+
 ### Added
 
 - **FMI interop module (`twingraph.fmi`)** — `parse_model_description()` and
