@@ -6,6 +6,12 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [0.0.1] — 2026-07-02
+
+Initial public release. Version numbering restarts at 0.0.1 for the public
+line; the 0.x entries below document internal pre-release history and were
+never published or tagged.
+
 ### Added
 
 - **Agent Skills pack** — portable Agent Skills under `skills/` for authoring,
@@ -21,8 +27,11 @@ semantic versioning.
   `explains`, `gates`, `annotates`, and `uses_data`.
 - **Unit table `ucum-subset/0.3`** — adds `USD/MW`, `count`, and the
   `probability -> ratio` alias.
+- **CI and release automation** — Python 3.11–3.13 test matrix, stricter ruff
+  rule set, version-parity tests, and a tag-driven release workflow that builds
+  and attaches the sdist and wheel.
 
-## [0.3.0] — 2026-06-22
+## [0.3.0] — 2026-06-22 (internal pre-release)
 
 From a composable battery/solar IR to a power-first operational twin kernel.
 `schema_version` stays `twingraph/0.1`; this release broadens registries and
@@ -60,7 +69,7 @@ compile checks without changing the document envelope.
   data-center thermal/power/workload graph, invalid relation ports, invalid
   property units, and invalid model IO units.
 
-## [0.2.0] — 2026-06-21
+## [0.2.0] — 2026-06-21 (internal pre-release)
 
 From a single-battery IR that *structurally* generalizes to a real composable,
 cross-domain operational IR. Fully backward-compatible: the golden
@@ -122,7 +131,7 @@ version, distinct from the package version), `UNIT_TABLE_VERSION` and
   retained + validated external references (see Added), not dead enums.
 - **Multi-twin composition/merge** — shipped via `compose()` (see Added).
 
-## [0.1.0] — 2026-06-20
+## [0.1.0] — 2026-06-20 (internal pre-release)
 
 The thin scaffold becomes the full TwinGraph 0.1 IR: typed primitives,
 canonicalization + content hashing, a type registry, a model-registry seam, a
