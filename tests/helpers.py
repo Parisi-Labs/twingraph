@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
+from typing import ClassVar
 
 from twingraph.errors import UnknownModelRefError
 from twingraph.registry import IOContract, ModelSpec
@@ -43,7 +44,7 @@ def mutate(doc: dict, fn) -> dict:
 class StubModelRegistry:
     """A minimal ModelRegistry knowing the demo's model_refs (compile-only)."""
 
-    _REFS = {
+    _REFS: ClassVar[dict[str, tuple[str, str]]] = {
         "registry://metis.components.battery_linear@1.0.0": ("native_component", "battery_linear"),
         "registry://metis.policies.hold@1.0.0": ("rule_policy", "policy_hold"),
         "registry://metis.policies.price_threshold@0.1.0": ("rule_policy", "policy_threshold"),
@@ -55,7 +56,7 @@ class StubModelRegistry:
     }
 
     # Foreign-reference model_refs available to tests (not in the demo plan).
-    _FOREIGN_REFS = {
+    _FOREIGN_REFS: ClassVar[dict[str, tuple[str, str]]] = {
         "registry://metis.foreign.turbine_fmu@1.0.0": ("fmu", "turbine_fmu"),
         "registry://metis.foreign.thermal_modelica@1.0.0": ("modelica_class", "thermal_modelica"),
     }
@@ -63,7 +64,7 @@ class StubModelRegistry:
     # io_contract overrides keyed by model_ref (else an empty IOContract). A
     # foreign FMU turbine declaring its ports — foreign-kind tests resolve this
     # and check the binding's input/output port sets match bidirectionally.
-    _CONTRACTS = {
+    _CONTRACTS: ClassVar[dict[str, IOContract]] = {
         "registry://metis.foreign.turbine_fmu@1.0.0": IOContract(
             inputs={"wind_speed": {"unit": "MW"}},
             outputs={"power": {"unit": "MW"}},
@@ -71,10 +72,7 @@ class StubModelRegistry:
     }
 
     def __init__(self, refs: dict | None = None) -> None:
-        if refs is None:
-            src = {**self._REFS, **self._FOREIGN_REFS}
-        else:
-            src = refs
+        src = {**self._REFS, **self._FOREIGN_REFS} if refs is None else refs
         self._specs = {
             ref: ModelSpec(
                 model_ref=ref,

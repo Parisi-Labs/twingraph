@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from helpers import StubModelRegistry, load_demo_doc
 
 

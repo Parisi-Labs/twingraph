@@ -10,7 +10,6 @@ from pathlib import Path
 
 import jsonschema
 import pytest
-
 from twingraph import TwinGraph
 from twingraph._schema_tool import build_schema
 

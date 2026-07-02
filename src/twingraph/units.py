@@ -255,11 +255,7 @@ class UnitRegistry:
         if u is None:
             return False
         s = u.strip()
-        if s in self._aliases or s in self._canonical or s.startswith(
-            _ISO_DURATION_PREFIX
-        ):
-            return True
-        return False
+        return s in self._aliases or s in self._canonical or s.startswith(_ISO_DURATION_PREFIX)
 
     def compatible(self, a: str, b: str) -> bool:
         ca, _ = self.normalize(a)

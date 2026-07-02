@@ -12,7 +12,7 @@ runtime code. stdlib + pydantic only.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -216,7 +216,7 @@ def compile_graph(
         program_registry if program_registry is not None else BUILTIN_PROGRAM_REGISTRY
     )
     unit_registry = unit_registry if unit_registry is not None else DEFAULT_UNIT_REGISTRY
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     ctx = _Ctx(graph)
 
     normalized = _stage_canonicalize(ctx)
@@ -608,28 +608,31 @@ def _validate_relation_ports(ctx: _Ctx, types: TypeRegistry, relation) -> None:
             continue
         type_def = types.resolve(entity.type_ref)
         entity_port = entity.ports.get(port)
-        if entity.ports and entity_port is None:
-            # Entity-level ports are concrete exported interfaces. They refine,
-            # but do not replace, type-level port names: internal relations may
-            # still use the generic TypeDef port ("ac_power", "from_bus", ...).
-            if type_def.ports is None or port not in type_def.ports:
-                ctx.add(
-                    "error",
-                    CODES.STRUCTURE,
-                    f"relation '{relation.id}' {field} '{port}' is neither an "
-                    f"exposed port on entity '{entity_id}' nor a declared port "
-                    f"on entity type '{entity.type_ref}'",
-                    "resolve_refs",
-                    {
-                        "relation": relation.id,
-                        "field": field,
-                        "entity": entity_id,
-                        "port": port,
-                        "allowed_ports": sorted(entity.ports),
-                        "allowed_port_kinds": list(type_def.ports or ()),
-                    },
-                )
-                continue
+        # Entity-level ports are concrete exported interfaces. They refine,
+        # but do not replace, type-level port names: internal relations may
+        # still use the generic TypeDef port ("ac_power", "from_bus", ...).
+        if (
+            entity.ports
+            and entity_port is None
+            and (type_def.ports is None or port not in type_def.ports)
+        ):
+            ctx.add(
+                "error",
+                CODES.STRUCTURE,
+                f"relation '{relation.id}' {field} '{port}' is neither an "
+                f"exposed port on entity '{entity_id}' nor a declared port "
+                f"on entity type '{entity.type_ref}'",
+                "resolve_refs",
+                {
+                    "relation": relation.id,
+                    "field": field,
+                    "entity": entity_id,
+                    "port": port,
+                    "allowed_ports": sorted(entity.ports),
+                    "allowed_port_kinds": list(type_def.ports or ()),
+                },
+            )
+            continue
         port_kind = entity_port.kind if entity_port is not None else port
         if type_def.ports is not None and port_kind not in type_def.ports:
             ctx.add(
@@ -736,8 +739,8 @@ def _property_unit(prop: Any) -> str | None:
     if isinstance(prop, dict):
         unit = prop.get("unit")
         return unit if isinstance(unit, str) else None
-    if hasattr(prop, "unit") and isinstance(getattr(prop, "unit"), str):
-        return getattr(prop, "unit")
+    if hasattr(prop, "unit") and isinstance(prop.unit, str):
+        return prop.unit
     return None
 
 

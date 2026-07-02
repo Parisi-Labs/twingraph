@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import twingraph as tg
+from helpers import build_solar_twin
 from twingraph.units import (
+    CANONICAL_UNITS,
     DEFAULT_UNIT_REGISTRY,
     UNIT_TABLE_VERSION,
-    CANONICAL_UNITS,
     UnitRegistry,
 )
-
-from helpers import build_solar_twin
 
 
 def _compile(graph, model_registry, **kw):

@@ -10,7 +10,7 @@ stdlib + pydantic only.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
@@ -37,7 +37,7 @@ SENTINEL_WORKSPACE = "00000000000000000000000000"
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class TwinGraph(BaseModel):
@@ -84,7 +84,7 @@ class TwinGraph(BaseModel):
         created_by: str,
         workspace_id: str = SENTINEL_WORKSPACE,
         created_at: datetime | None = None,
-    ) -> "TwinGraph":
+    ) -> TwinGraph:
         """Mint a fresh draft graph (graph_id + version_id generated)."""
         return cls(
             graph_id=new_ulid(),
@@ -97,7 +97,7 @@ class TwinGraph(BaseModel):
         )
 
     @classmethod
-    def load(cls, doc: dict[str, Any]) -> "TwinGraph":
+    def load(cls, doc: dict[str, Any]) -> TwinGraph:
         """Validate a document dict, folding legacy field spellings first.
 
         Immutability-after-activation (§9.2) is enforced on load, not only via
@@ -129,7 +129,7 @@ class TwinGraph(BaseModel):
         """Semantic-identity hash (excludes content_hash/created_at/version_id)."""
         return content_hash(hash_input(self.model_dump(mode="json")))
 
-    def with_content_hash(self) -> "TwinGraph":
+    def with_content_hash(self) -> TwinGraph:
         """Return a copy with ``content_hash`` set to the computed value."""
         copy_ = self.model_copy(deep=True)
         object.__setattr__(copy_, "content_hash", self.compute_content_hash())
@@ -142,7 +142,7 @@ class TwinGraph(BaseModel):
     def is_frozen(self) -> bool:
         return self._frozen
 
-    def activate(self) -> "TwinGraph":
+    def activate(self) -> TwinGraph:
         """One-way freeze: status -> active; later in-place mutation raises."""
         self.status = "active"
         if self.content_hash is None:

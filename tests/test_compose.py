@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import pytest
-
 import twingraph as tg
+from helpers import build_solar_twin, load_demo_twin
 from twingraph import (
     CompositionError,
     Entity,
@@ -15,8 +15,6 @@ from twingraph import (
     Variable,
     compose,
 )
-
-from helpers import build_solar_twin, load_demo_twin
 
 
 def _compile(graph, model_registry, **kw):
@@ -346,7 +344,7 @@ def test_qualify_mode_rewrites_expression_idents(model_registry):
 
     a = tiny("acme.alpha")
     b = tiny("acme.beta")
-    composite, report = compose([a, b], name="dup", created_by="t", id_policy="qualify")
+    composite, _report = compose([a, b], name="dup", created_by="t", id_policy="qualify")
     # Both constraint expressions must reference DISTINCT qualified var ids.
     exprs = [c.expression.value for c in composite.constraints if c.expression]
     assert len(exprs) == 2
