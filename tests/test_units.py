@@ -24,7 +24,7 @@ def _compile(graph, model_registry, **kw):
 def test_default_table_and_version_unchanged():
     # The default table is now the operational core table, but intentionally still
     # excludes arbitrary adopter-specific units such as cycles.
-    assert UNIT_TABLE_VERSION == "ucum-subset/0.3"
+    assert UNIT_TABLE_VERSION == "ucum-subset/0.4"
     assert DEFAULT_UNIT_REGISTRY.is_known("kV")
     assert DEFAULT_UNIT_REGISTRY.is_known("request/s")
     assert DEFAULT_UNIT_REGISTRY.is_known("USD/MW")
@@ -34,6 +34,29 @@ def test_default_table_and_version_unchanged():
     assert DEFAULT_UNIT_REGISTRY.compatible("probability", "ratio")
     assert "cycles" not in CANONICAL_UNITS
     assert not DEFAULT_UNIT_REGISTRY.is_known("cycles")
+
+
+def test_si_physical_units_for_fmi_interop():
+    # Joule-family energies fold into MW.h (1 GJ = 1/3.6 MW.h).
+    assert DEFAULT_UNIT_REGISTRY.compatible("J", "MW.h")
+    canonical, scale = DEFAULT_UNIT_REGISTRY.normalize("GJ")
+    assert canonical == "MW.h"
+    assert abs(scale - 1.0 / 3.6) < 1e-12
+    # SI mass folds into the existing tonne canonical.
+    assert DEFAULT_UNIT_REGISTRY.compatible("kg", "tonne")
+    assert DEFAULT_UNIT_REGISTRY.normalize("kg") == ("tonne", 1e-3)
+    # Pressure.
+    assert DEFAULT_UNIT_REGISTRY.compatible("bar", "Pa")
+    assert DEFAULT_UNIT_REGISTRY.normalize("bar") == ("Pa", 1e5)
+
+
+def test_kelvin_is_known_but_not_scale_compatible_with_celsius():
+    # degC <-> K is an affine conversion; the scale-only table must NOT claim
+    # compatibility, so a mismatch surfaces at compile instead of silently
+    # treating 300 K as 300 degC.
+    assert DEFAULT_UNIT_REGISTRY.is_known("K")
+    assert DEFAULT_UNIT_REGISTRY.compatible("kelvin", "K")
+    assert not DEFAULT_UNIT_REGISTRY.compatible("K", "degC")
 
 
 def test_unregistered_domain_unit_errors_under_default(model_registry):

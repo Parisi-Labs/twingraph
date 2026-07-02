@@ -6,6 +6,19 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- **FMI interop module (`twingraph.fmi`)** — `parse_model_description()` and
+  `read_fmu_model_description()` parse an FMU's `modelDescription.xml` (FMI 2.x
+  and 3.x, including `declaredType` unit lookups, stdlib-only), and
+  `io_contract_from_fmu()` derives a foreign `fmu` binding's io_contract
+  mechanically instead of hand-transcription. New `FmiParseError` misuse error.
+- **Unit table `ucum-subset/0.4`** — SI physical units for FMI/Modelica ports:
+  `K` and `Pa` canonical (with `kelvin`, `kPa`, `MPa`, `bar` aliases), joule
+  family (`J`/`kJ`/`MJ`/`GJ`) folded into `MW.h`, and `kg`/`g` folded into
+  `tonne`. `K` is intentionally NOT scale-linked to `degC`: affine conversions
+  are out of table scope, so a degC/K pairing reports `TG_UNIT_MISMATCH`.
+
 ## [0.0.1] — 2026-07-02
 
 Initial public release. Version numbering restarts at 0.0.1 for the public

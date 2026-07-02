@@ -52,6 +52,13 @@ are confirmed.
   or generated proposal.
 - Confidence: confirmed owner-provided specs can be `1.0`; inferred values from
   diagrams, web pages, or incomplete PDFs should be lower.
+- FMUs/Modelica: when the source is a packed `.fmu` or a `modelDescription.xml`,
+  do NOT hand-transcribe ports. Use `twingraph.fmi`:
+  `read_fmu_model_description(path)` (or `parse_model_description(xml)`) gives
+  the typed variable list, and `io_contract_from_fmu(desc)` derives the foreign
+  binding's io_contract mechanically — FMI causality maps to contract
+  inputs/outputs/params and declared units are preserved. Parsed facts from a
+  machine-readable model description can carry `confidence` near `1.0`.
 
 ## Output Shape
 

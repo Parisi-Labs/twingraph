@@ -30,12 +30,20 @@ from .errors import (
     CODES,
     CompositionError,
     Diagnostic,
+    FmiParseError,
     FrozenGraphError,
     ImmutableGraphError,
     OutOfOrderPatchError,
     TwinGraphError,
     UnknownModelRefError,
     UnknownTypeRefError,
+)
+from .fmi import (
+    FmiVariable,
+    FmuModelDescription,
+    io_contract_from_fmu,
+    parse_model_description,
+    read_fmu_model_description,
 )
 from .ids import Ulid, new_ulid, validate_ulid
 from .patch import (
@@ -153,6 +161,10 @@ __all__ = [
     "EntityPort",
     "Evidence",
     "ExecutablePlan",
+    # fmi
+    "FmiParseError",
+    "FmiVariable",
+    "FmuModelDescription",
     "FrozenGraphError",
     "IOContract",
     "ImmutableGraphError",
@@ -211,10 +223,13 @@ __all__ = [
     # composition
     "compose",
     "content_hash",
+    "io_contract_from_fmu",
     "lineage",
     # ids
     "new_ulid",
     "normalize_unit",
+    "parse_model_description",
+    "read_fmu_model_description",
     "register_type_pack",
     "to_dot",
     # viz

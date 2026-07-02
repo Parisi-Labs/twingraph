@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-UNIT_TABLE_VERSION = "ucum-subset/0.3"
+UNIT_TABLE_VERSION = "ucum-subset/0.4"
 
 # Canonical spellings the IR hashes and compiles against.
 CANONICAL_UNITS: frozenset[str] = frozenset(
@@ -37,6 +37,12 @@ CANONICAL_UNITS: frozenset[str] = frozenset(
         "W.h/m2",
         "m/s",
         "degC",
+        # Absolute temperature. NOT alias-linked to degC: the alias table folds
+        # by scale factor only, and degC<->K is an affine (offset) conversion.
+        # A degC/K pairing therefore reports TG_UNIT_MISMATCH, forcing an
+        # explicit conversion at the model or binding boundary.
+        "K",
+        "Pa",
         "MW_th",
         "ton_refrigeration",
         "MMBtu",
@@ -90,6 +96,11 @@ _ALIASES: dict[str, tuple[str, float]] = {
     "mw": ("MW", 1.0),
     "GW": ("MW", 1e3),
     "GWh": ("MW.h", 1e3),
+    # SI energy (FMI/Modelica ports are typically joule-denominated).
+    "J": ("MW.h", 1.0 / 3.6e9),
+    "kJ": ("MW.h", 1.0 / 3.6e6),
+    "MJ": ("MW.h", 1.0 / 3.6e3),
+    "GJ": ("MW.h", 1.0 / 3.6),
     "USD/MWh": ("USD/MW.h", 1.0),
     "USD/MW.h": ("USD/MW.h", 1.0),
     "$/MWh": ("USD/MW.h", 1.0),
@@ -131,6 +142,13 @@ _ALIASES: dict[str, tuple[str, float]] = {
     "degC": ("degC", 1.0),
     "C": ("degC", 1.0),
     "celsius": ("degC", 1.0),
+    "K": ("K", 1.0),
+    "kelvin": ("K", 1.0),
+    "degK": ("K", 1.0),
+    "Pa": ("Pa", 1.0),
+    "kPa": ("Pa", 1e3),
+    "MPa": ("Pa", 1e6),
+    "bar": ("Pa", 1e5),
     "MW_th": ("MW_th", 1.0),
     "kW_th": ("MW_th", 1e-3),
     "ton_refrigeration": ("ton_refrigeration", 1.0),
@@ -152,6 +170,9 @@ _ALIASES: dict[str, tuple[str, float]] = {
     "kilometer": ("km", 1.0),
     "tonne": ("tonne", 1.0),
     "metric_ton": ("tonne", 1.0),
+    # SI mass folds into the existing tonne canonical (mass stays one family).
+    "kg": ("tonne", 1e-3),
+    "g": ("tonne", 1e-6),
     "item": ("item", 1.0),
     "items": ("item", 1.0),
     "item/h": ("item/h", 1.0),
