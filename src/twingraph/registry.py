@@ -16,8 +16,9 @@ stdlib + pydantic only.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from .errors import UnknownTypeRefError
 
@@ -713,24 +714,24 @@ BUILTIN_TYPE_REGISTRY = build_type_registry()
 
 
 __all__ = [
-    "PropSpec",
-    "VarSpec",
+    "BUILTIN_TYPE_PACKS",
+    "BUILTIN_TYPE_REGISTRY",
+    "DATA_CENTER_TYPE_PACK",
+    "DATA_TYPE_PACK",
+    "OPERATIONS_TYPE_PACK",
+    "PLATFORM_ANALYSIS_TYPE_PACK",
+    "POWER_TYPE_PACK",
+    "RELATION_TYPE_PACK",
     "ActionSpec",
+    "IOContract",
+    "InMemoryTypeRegistry",
+    "ModelRegistry",
+    "ModelSpec",
+    "PropSpec",
     "TypeDef",
     "TypePack",
     "TypeRegistry",
-    "InMemoryTypeRegistry",
-    "RELATION_TYPE_PACK",
-    "POWER_TYPE_PACK",
-    "DATA_CENTER_TYPE_PACK",
-    "OPERATIONS_TYPE_PACK",
-    "DATA_TYPE_PACK",
-    "PLATFORM_ANALYSIS_TYPE_PACK",
-    "BUILTIN_TYPE_PACKS",
-    "register_type_pack",
+    "VarSpec",
     "build_type_registry",
-    "IOContract",
-    "ModelSpec",
-    "ModelRegistry",
-    "BUILTIN_TYPE_REGISTRY",
+    "register_type_pack",
 ]

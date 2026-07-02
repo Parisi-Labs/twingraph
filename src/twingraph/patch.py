@@ -22,9 +22,10 @@ stdlib + pydantic only.
 from __future__ import annotations
 
 import copy
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Annotated, Any, Callable, Literal, Union
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -205,36 +206,7 @@ class ResolveAssumption(_Op):
 
 
 Operation = Annotated[
-    Union[
-        AddEntity,
-        RemoveEntity,
-        ReplaceEntity,
-        AddRelation,
-        RemoveRelation,
-        ReplaceRelation,
-        AddVariable,
-        RemoveVariable,
-        ReplaceVariable,
-        AddDataBinding,
-        RemoveDataBinding,
-        ReplaceDataBinding,
-        AddModelBinding,
-        RemoveModelBinding,
-        ReplaceModelBinding,
-        AddConstraint,
-        RemoveConstraint,
-        ReplaceConstraint,
-        AddObjective,
-        RemoveObjective,
-        ReplaceObjective,
-        AddValidator,
-        RemoveValidator,
-        ReplaceValidator,
-        AddEvidence,
-        RemoveEvidence,
-        SetProperty,
-        ResolveAssumption,
-    ],
+    AddEntity | RemoveEntity | ReplaceEntity | AddRelation | RemoveRelation | ReplaceRelation | AddVariable | RemoveVariable | ReplaceVariable | AddDataBinding | RemoveDataBinding | ReplaceDataBinding | AddModelBinding | RemoveModelBinding | ReplaceModelBinding | AddConstraint | RemoveConstraint | ReplaceConstraint | AddObjective | RemoveObjective | ReplaceObjective | AddValidator | RemoveValidator | ReplaceValidator | AddEvidence | RemoveEvidence | SetProperty | ResolveAssumption,
     Field(discriminator="op"),
 ]
 
@@ -246,7 +218,7 @@ class SemanticPatch(BaseModel):
     base_version_id: str
     intent: str
     created_by: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     operations: list[Operation] = Field(default_factory=list)
     evidence_refs: list[str] = Field(default_factory=list)
     assumptions_created: list[str] = Field(default_factory=list)
@@ -277,7 +249,7 @@ class PatchLog(BaseModel):
                 "patch_id": report.patch_id,
                 "base_version_id": report.base_version_id,
                 "result_version_id": report.result_version_id,
-                "applied_at": (applied_at or datetime.now(timezone.utc)).isoformat(),
+                "applied_at": (applied_at or datetime.now(UTC)).isoformat(),
                 "status": report.status.value,
             }
         )
@@ -317,7 +289,7 @@ def _list_for(graph: TwinGraph, attr: str) -> list:
 
 
 def _apply_add(seq: list, item, ident: str) -> None:
-    if any(getattr(x, "id") == ident for x in seq):
+    if any(x.id == ident for x in seq):
         raise TwinGraphError(f"add: id '{ident}' already exists")
     seq.append(item)
 
@@ -346,7 +318,7 @@ def apply_patch(
     now: datetime | None = None,
 ) -> tuple[TwinGraph, PatchApplyReport]:
     """Apply ``patch`` to ``graph``, returning a NEW draft document + report."""
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
 
     # (1) order check
     if patch.base_version_id != graph.version_id:
@@ -392,7 +364,7 @@ def apply_patch(
     return draft, report
 
 
-def _apply_op(draft: TwinGraph, op: Operation) -> None:  # noqa: C901
+def _apply_op(draft: TwinGraph, op: Operation) -> None:
     name = op.op
     if name == "add_entity":
         _apply_add(draft.entities, op.entity, op.entity.id)

@@ -28,8 +28,9 @@ stdlib + pydantic only.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Callable
+from collections.abc import Callable
+from datetime import UTC, datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -305,7 +306,7 @@ def compose(
         name=name,
         namespace=namespace,
         status="draft",
-        created_at=created_at or datetime.now(timezone.utc),
+        created_at=created_at or datetime.now(UTC),
         created_by=created_by,
         parent_version_id=None,
         provenance={"composed_from": composed_from},
@@ -418,25 +419,30 @@ def _cross_relation_interface_conflicts(
                 }
             )
 
-        if source_port and target_port and source_port.unit and target_port.unit:
-            if not units_compatible(source_port.unit, target_port.unit):
-                conflicts.append(
-                    {
-                        "relation": rel.id,
-                        "kind": "port_unit_mismatch",
-                        "source_entity": source.id,
-                        "source_port": rel.source_port,
-                        "source_unit": source_port.unit,
-                        "target_entity": target.id,
-                        "target_port": rel.target_port,
-                        "target_unit": target_port.unit,
-                    }
-                )
+        if (
+            source_port
+            and target_port
+            and source_port.unit
+            and target_port.unit
+            and not units_compatible(source_port.unit, target_port.unit)
+        ):
+            conflicts.append(
+                {
+                    "relation": rel.id,
+                    "kind": "port_unit_mismatch",
+                    "source_entity": source.id,
+                    "source_port": rel.source_port,
+                    "source_unit": source_port.unit,
+                    "target_entity": target.id,
+                    "target_port": rel.target_port,
+                    "target_unit": target_port.unit,
+                }
+            )
 
     return conflicts
 
 
 __all__ = [
-    "compose",
     "CompositionReport",
+    "compose",
 ]

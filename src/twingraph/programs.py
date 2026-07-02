@@ -24,8 +24,9 @@ stdlib + pydantic only.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, avoids import cycle
     from .compile import ProgramCompatibilityReport, _Ctx
@@ -40,7 +41,7 @@ class ProfileRequirement:
     ``missing_label`` is appended to the report's ``missing`` list."""
 
     missing_label: str
-    predicate: Callable[["_Ctx"], bool]
+    predicate: Callable[[_Ctx], bool]
     params: dict[str, Any] = field(default_factory=dict)
 
 
@@ -49,7 +50,7 @@ class ProgramProfile:
     name: str
     requirements: tuple[ProfileRequirement, ...] = ()
 
-    def check(self, ctx: "_Ctx") -> "ProgramCompatibilityReport":
+    def check(self, ctx: _Ctx) -> ProgramCompatibilityReport:
         from .compile import ProgramCompatibilityReport
 
         missing: list[str] = []
@@ -90,7 +91,7 @@ class InMemoryProgramRegistry:
 # The battery tomorrow_dispatch profile — predicates reproduce the legacy
 # stage-10 checks EXACTLY (same labels, same order). Do not reorder.
 # ---------------------------------------------------------------------------
-def _battery_ids(ctx: "_Ctx") -> set[str]:
+def _battery_ids(ctx: _Ctx) -> set[str]:
     return {
         e.id
         for e in ctx.graph.entities
@@ -98,11 +99,11 @@ def _battery_ids(ctx: "_Ctx") -> set[str]:
     }
 
 
-def _has_battery_entity(ctx: "_Ctx") -> bool:
+def _has_battery_entity(ctx: _Ctx) -> bool:
     return bool(_battery_ids(ctx))
 
 
-def _has_battery_native_binding(ctx: "_Ctx") -> bool:
+def _has_battery_native_binding(ctx: _Ctx) -> bool:
     bats = _battery_ids(ctx)
     return any(
         m.kind == "native_component"
@@ -114,17 +115,17 @@ def _has_battery_native_binding(ctx: "_Ctx") -> bool:
     )
 
 
-def _has_exogenous_data_binding(ctx: "_Ctx") -> bool:
+def _has_exogenous_data_binding(ctx: _Ctx) -> bool:
     exo = {v.id for v in ctx.graph.variables if v.role == "exogenous"}
     bound = {b.variable_id for b in ctx.graph.data_bindings}
     return bool(exo & bound)
 
 
-def _has_objective_with_terms(ctx: "_Ctx") -> bool:
+def _has_objective_with_terms(ctx: _Ctx) -> bool:
     return any(o.terms and o.aggregation for o in ctx.graph.objectives)
 
 
-def _has_hard_constraint(ctx: "_Ctx") -> bool:
+def _has_hard_constraint(ctx: _Ctx) -> bool:
     return any(c.class_.startswith("hard_") for c in ctx.graph.constraints)
 
 
@@ -148,10 +149,10 @@ BUILTIN_PROGRAM_REGISTRY = InMemoryProgramRegistry([TOMORROW_DISPATCH_PROFILE])
 
 
 __all__ = [
+    "BUILTIN_PROGRAM_REGISTRY",
+    "TOMORROW_DISPATCH_PROFILE",
+    "InMemoryProgramRegistry",
     "ProfileRequirement",
     "ProgramProfile",
     "ProgramRegistry",
-    "InMemoryProgramRegistry",
-    "BUILTIN_PROGRAM_REGISTRY",
-    "TOMORROW_DISPATCH_PROFILE",
 ]

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 SCHEMA_VERSION = "twingraph/0.1"
@@ -87,8 +87,8 @@ def _normalize_time_str(t: str) -> str:
         s = raw.replace("Z", "+00:00") if raw.endswith("Z") else raw
         dt = datetime.fromisoformat(s)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        dt = dt.astimezone(timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
+        dt = dt.astimezone(UTC)
         out = dt.isoformat().replace("+00:00", "Z")
         return out
     except (ValueError, TypeError):
