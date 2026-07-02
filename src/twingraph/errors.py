@@ -70,6 +70,10 @@ class CompositionError(TwinGraphError):
     (misuse: the author must namespace/qualify or supply disjoint ids)."""
 
 
+class FmiParseError(TwinGraphError):
+    """An FMU modelDescription.xml could not be parsed as FMI 2.x or 3.x."""
+
+
 # ---------------------------------------------------------------------------
 # Stable diagnostic codes
 # ---------------------------------------------------------------------------
