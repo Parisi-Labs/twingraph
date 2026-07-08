@@ -6,6 +6,8 @@ semantic versioning.
 
 ## [Unreleased]
 
+## [0.0.3] — 2026-07-08
+
 ### Added
 
 - Dependabot weekly version-update configuration for GitHub Actions and Python

@@ -12,7 +12,7 @@ It is an intermediate representation, not an optimizer, simulator, database, or
 UI. The core is deliberately dependency-clean: **stdlib + pydantic only**.
 
 ```bash
-pip install "twingraph @ git+https://github.com/parisi-labs/twingraph.git@v0.0.2"
+pip install "twingraph @ git+https://github.com/parisi-labs/twingraph.git@v0.0.3"
 ```
 
 > **Note**: TwinGraph is not yet published to PyPI — the `twingraph` name there
