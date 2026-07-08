@@ -23,6 +23,10 @@ Run the full test suite before opening a pull request. If you change pydantic
 models, regenerate the JSON Schema and make sure `tests/test_schema_parity.py`
 passes.
 
+Dependabot opens weekly maintenance PRs for GitHub Actions and Python
+dependencies. Keep dependency updates small and verify they do not expand the
+runtime dependency boundary beyond stdlib + `pydantic`.
+
 ## Releasing
 
 1. Bump `version` in `pyproject.toml` and `__version__` in
@@ -32,6 +36,9 @@ passes.
    `## [<version>] — <date>` section.
 3. Merge to `main`, then push a `v<version>` tag. The release workflow builds
    the sdist and wheel and attaches them to a GitHub release.
+
+Until PyPI package ownership is resolved, GitHub Releases are the canonical
+distribution channel.
 
 ## Design Guidelines
 

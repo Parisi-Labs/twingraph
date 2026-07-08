@@ -6,6 +6,16 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Dependabot weekly version-update configuration for GitHub Actions and Python
+  dependency manifests.
+
+### Changed
+
+- README installation guidance now points at the current GitHub release tag and
+  clarifies the PyPI handoff status.
+
 ## [0.0.2] — 2026-07-02
 
 ### Added

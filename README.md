@@ -12,7 +12,7 @@ It is an intermediate representation, not an optimizer, simulator, database, or
 UI. The core is deliberately dependency-clean: **stdlib + pydantic only**.
 
 ```bash
-pip install "twingraph @ git+https://github.com/parisi-labs/twingraph.git@v0.0.1"
+pip install "twingraph @ git+https://github.com/parisi-labs/twingraph.git@v0.0.2"
 ```
 
 > **Note**: TwinGraph is not yet published to PyPI — the `twingraph` name there
@@ -20,6 +20,14 @@ pip install "twingraph @ git+https://github.com/parisi-labs/twingraph.git@v0.0.1
 > twingraph` will NOT install this project. Install from GitHub (above) or from
 > the sdist/wheel attached to a [GitHub
 > release](https://github.com/parisi-labs/twingraph/releases).
+
+To install from a local checkout:
+
+```bash
+git clone https://github.com/parisi-labs/twingraph.git
+cd twingraph
+python -m pip install .
+```
 
 ## Why This Exists
 
@@ -277,6 +285,14 @@ python -m twingraph._schema_tool > schema/twingraph-0.1.schema.json
 
 The dependency invariant is tested: the core package must not import application
 code and must remain stdlib + pydantic.
+
+## Maintenance Status
+
+- Releases are currently distributed through GitHub Releases while PyPI package
+  ownership is being resolved.
+- Dependabot is configured for weekly GitHub Actions and Python dependency
+  checks.
+- Runtime dependencies remain intentionally narrow: stdlib plus `pydantic`.
 
 ## License
 
