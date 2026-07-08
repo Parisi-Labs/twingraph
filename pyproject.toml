@@ -25,10 +25,10 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Typing :: Typed",
 ]
-dependencies = ["pydantic>=2"]
+dependencies = ["pydantic>=2.13.4"]
 
 [project.optional-dependencies]
-dev = ["jsonschema>=4.22", "pytest>=8", "ruff>=0.6"]
+dev = ["jsonschema>=4.26.0", "pytest>=9.1.1", "ruff>=0.15.20"]
 
 [project.urls]
 Homepage = "https://github.com/parisi-labs/twingraph"
