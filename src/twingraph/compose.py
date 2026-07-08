@@ -37,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .document import TwinGraph
 from .errors import CompositionError
 from .ids import new_ulid
-from .metis_expr import ExpressionParseError, extract_references
+from .metis_expr import ExpressionParseError, replace_identifiers
 from .primitives import FOREIGN_MODEL_KINDS, Relation
 from .units import units_compatible
 
@@ -122,20 +122,9 @@ def _qualify_twin(
 
     def remap_expression(expr_value: str) -> str:
         try:
-            refs = extract_references(expr_value)
+            return replace_identifiers(expr_value, remap)
         except ExpressionParseError:
             return expr_value
-        out = expr_value
-        # Replace longest idents first to avoid partial-substring clobbering.
-        idents = sorted(
-            {r.split(":", 1)[1] if r.startswith("var:") else r for r in refs},
-            key=len,
-            reverse=True,
-        )
-        for ident in idents:
-            if ident in remap:
-                out = _replace_ident(out, ident, remap[ident])
-        return out
 
     d = twin.model_dump(mode="json", by_alias=True)
 
@@ -192,30 +181,6 @@ def _qualify_twin(
         ev["id"] = rid(ev["id"])
 
     return TwinGraph.model_validate(d)
-
-
-def _replace_ident(expr: str, old: str, new: str) -> str:
-    """Replace whole-token ``old`` with ``new`` in an expression string."""
-    out: list[str] = []
-    i = 0
-    n = len(old)
-
-    def is_ident_char(ch: str) -> bool:
-        return ch.isalnum() or ch in "_."
-
-    while i < len(expr):
-        if (
-            expr[i : i + n] == old
-            and (i == 0 or not is_ident_char(expr[i - 1]))
-            and (i + n >= len(expr) or not is_ident_char(expr[i + n]))
-        ):
-            out.append(new)
-            i += n
-        else:
-            out.append(expr[i])
-            i += 1
-    return "".join(out)
-
 
 # ---------------------------------------------------------------------------
 # compose

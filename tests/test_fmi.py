@@ -134,6 +134,42 @@ def test_parse_rejects_fmi1_and_malformed():
         parse_model_description("<somethingElse/>")
 
 
+def test_parse_rejects_unsafe_xml_declarations():
+    with pytest.raises(FmiParseError, match="DOCTYPE or ENTITY"):
+        parse_model_description(
+            """<?xml version="1.0"?>
+            <!DOCTYPE fmiModelDescription [
+              <!ENTITY laugh "ha">
+            ]>
+            <fmiModelDescription fmiVersion="3.0" modelName="unsafe"/>
+            """
+        )
+
+    with pytest.raises(FmiParseError, match="DOCTYPE or ENTITY"):
+        parse_model_description(
+            """<?xml version="1.0"?>
+            <!ENTITY external SYSTEM "file:///etc/passwd">
+            <fmiModelDescription fmiVersion="3.0" modelName="unsafe"/>
+            """
+        )
+
+
+def test_read_fmu_rejects_unsafe_model_description(tmp_path):
+    fmu = tmp_path / "unsafe.fmu"
+    with zipfile.ZipFile(fmu, "w") as archive:
+        archive.writestr(
+            "modelDescription.xml",
+            """<?xml version="1.0"?>
+            <!DOCTYPE fmiModelDescription [
+              <!ENTITY laugh "ha">
+            ]>
+            <fmiModelDescription fmiVersion="3.0" modelName="unsafe"/>
+            """,
+        )
+    with pytest.raises(FmiParseError, match="DOCTYPE or ENTITY"):
+        read_fmu_model_description(fmu)
+
+
 def test_generated_contract_matches_hand_written_foreign_contract():
     """The derived contract is interchangeable with the hand-written §31.3 one."""
     from helpers import StubModelRegistry

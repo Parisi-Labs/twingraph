@@ -337,7 +337,9 @@ def test_qualify_mode_rewrites_expression_idents(model_registry):
         t.constraints.append(
             Constraint(
                 id="c", name="c", **{"class": "hard_physical"}, scope_ref="bat",
-                expression=ConstraintExpression(value="x >= 0"),
+                expression=ConstraintExpression(
+                    value="x >= 0 and max(x_aux, var:x) == x"
+                ),
             )
         )
         return t
@@ -348,8 +350,11 @@ def test_qualify_mode_rewrites_expression_idents(model_registry):
     # Both constraint expressions must reference DISTINCT qualified var ids.
     exprs = [c.expression.value for c in composite.constraints if c.expression]
     assert len(exprs) == 2
-    # One expression got its 'x' rewritten to the prefixed id.
-    assert any("beta:x" in e for e in exprs)
+    # One expression got token-level rewrites for bare and var: references.
+    assert any("beta:x >= 0" in e for e in exprs)
+    assert any("var:beta:x" in e for e in exprs)
+    # Similar identifiers are not substring-rewritten.
+    assert all("beta:x_aux" not in e for e in exprs)
 
 
 # --- foreign-region marking ------------------------------------------------

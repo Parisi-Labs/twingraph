@@ -10,13 +10,15 @@ to catch. This module derives it mechanically instead:
     contract = io_contract_from_fmu(desc)
 
 Supports FMI 2.x and 3.x model descriptions, including ``declaredType`` unit
-lookups through ``TypeDefinitions``. stdlib only (``xml.etree`` + ``zipfile``);
-parse FMUs from trusted sources — ``xml.etree`` does not defend against
-maliciously constructed documents (e.g. entity-expansion attacks).
+lookups through ``TypeDefinitions``. stdlib only (``xml.etree`` + ``zipfile``).
+Before parsing, TwinGraph rejects ``DOCTYPE`` and ``ENTITY`` declarations to
+avoid entity-expansion and external-entity constructs without adding a runtime
+dependency.
 """
 
 from __future__ import annotations
 
+import re
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -26,6 +28,7 @@ from .errors import FmiParseError
 from .registry import IOContract
 
 _MODEL_DESCRIPTION = "modelDescription.xml"
+_UNSAFE_XML_DECLARATION = re.compile(r"<!\s*(?:DOCTYPE|ENTITY)\b", re.IGNORECASE)
 
 # FMI 3.0 variable element tags (FMI 2.0 uses <ScalarVariable> with a typed child).
 _FMI3_VARIABLE_TAGS = frozenset(
@@ -90,6 +93,7 @@ class FmuModelDescription:
 
 def parse_model_description(xml_text: str) -> FmuModelDescription:
     """Parse a modelDescription.xml document (FMI 2.x or 3.x)."""
+    _reject_unsafe_xml_declarations(xml_text)
     try:
         root = ElementTree.fromstring(xml_text)
     except ElementTree.ParseError as exc:
@@ -141,6 +145,14 @@ def read_fmu_model_description(path: str | Path) -> FmuModelDescription:
             f"'{fmu_path}' contains no {_MODEL_DESCRIPTION} at the archive root"
         ) from None
     return parse_model_description(xml_text)
+
+
+def _reject_unsafe_xml_declarations(xml_text: str) -> None:
+    if _UNSAFE_XML_DECLARATION.search(xml_text):
+        raise FmiParseError(
+            "modelDescription.xml contains a DOCTYPE or ENTITY declaration; "
+            "entity expansion and external entities are not supported"
+        )
 
 
 def io_contract_from_fmu(desc: FmuModelDescription) -> IOContract:

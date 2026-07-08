@@ -3,7 +3,8 @@
 The 0.1 field renames are breaking. To smooth a single migration window we
 accept the old scaffold spellings and normalize them to the spec shape BEFORE
 model validation. New documents should be authored in the spec shape directly;
-these aliases are documented in CHANGELOG.md and will be removed in 0.2.
+these aliases are documented in CHANGELOG.md and are scheduled for removal
+before the public 0.1.0 line.
 
 Renames handled:
   Relation:   source_id      -> source_entity_id

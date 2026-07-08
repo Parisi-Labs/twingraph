@@ -10,11 +10,17 @@ semantic versioning.
 
 - Dependabot weekly version-update configuration for GitHub Actions and Python
   dependency manifests.
+- FMI modelDescription parsing now rejects XML ``DOCTYPE`` and ``ENTITY``
+  declarations before stdlib XML parsing.
 
 ### Changed
 
 - README installation guidance now points at the current GitHub release tag and
   clarifies the PyPI handoff status.
+- Multi-twin qualify-mode expression remapping now uses the shared metis_expr
+  tokenizer instead of a hand-rolled identifier boundary scanner.
+- The load-time legacy alias normalizer now documents its public-version removal
+  target.
 
 ## [0.0.2] — 2026-07-02
 

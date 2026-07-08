@@ -71,3 +71,37 @@ def extract_references(expr: str) -> list[str]:
             seen.add(r)
             out.append(r)
     return out
+
+
+def replace_identifiers(expr: str, replacements: dict[str, str]) -> str:
+    """Return ``expr`` with identifier tokens replaced by exact-token match.
+
+    Whitespace and operators are preserved. Bare identifiers are replaced when
+    they are present in ``replacements``. ``var:<id>`` tokens are also rewritten
+    when ``<id>`` is present, preserving the ``var:`` prefix. Other namespaced
+    identifiers such as ``property:foo`` are left untouched unless the full token
+    appears in ``replacements``.
+    """
+    out: list[str] = []
+    pos = 0
+    for m in _TOKEN_RE.finditer(expr):
+        if m.start() != pos:
+            raise ExpressionParseError(
+                f"unrecognised token at {pos} in {expr!r}: {expr[pos:m.start()]!r}"
+            )
+        pos = m.end()
+        kind = m.lastgroup
+        text = m.group()
+        if kind == "ident":
+            if text in replacements:
+                text = replacements[text]
+            elif text.startswith("var:"):
+                var_id = text.split(":", 1)[1]
+                if var_id in replacements:
+                    text = f"var:{replacements[var_id]}"
+        out.append(text)
+    if pos != len(expr):
+        raise ExpressionParseError(
+            f"unrecognised token at {pos} in {expr!r}: {expr[pos:]!r}"
+        )
+    return "".join(out)
