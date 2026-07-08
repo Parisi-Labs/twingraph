@@ -102,7 +102,7 @@ class Entity(_Base):
     ports: dict[str, EntityPort] = Field(default_factory=dict)
     tags: list[str] = Field(default_factory=list)
     provenance: Provenance | None = None
-    confidence: float = 1.0
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     confirmation_state: ConfirmationState = ConfirmationState.confirmed
 
 
@@ -174,6 +174,12 @@ class VarBounds(_Base):
     max: float | None = None
     min_from: str | None = None
     max_from: str | None = None
+
+    @model_validator(mode="after")
+    def _min_lte_max(self) -> VarBounds:
+        if self.min is not None and self.max is not None and self.min > self.max:
+            raise ValueError("variable bounds require min <= max")
+        return self
 
 
 class VarInitFallback(_Base):
@@ -249,6 +255,16 @@ class BindingValidation(_Base):
     allowed_min: float | None = None
     allowed_max: float | None = None
 
+    @model_validator(mode="after")
+    def _allowed_min_lte_max(self) -> BindingValidation:
+        if (
+            self.allowed_min is not None
+            and self.allowed_max is not None
+            and self.allowed_min > self.allowed_max
+        ):
+            raise ValueError("binding validation range requires allowed_min <= allowed_max")
+        return self
+
 
 class DataBinding(_Base):
     id: str = Field(pattern=ID_PATTERN)
@@ -265,7 +281,7 @@ class DataBinding(_Base):
     # When availability is omitted, an explicit conservative justification is required.
     conservative_availability_policy: str | None = None
     validation: BindingValidation | None = None
-    confidence: float = 1.0
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     provenance: Provenance | None = None
 
     @model_validator(mode="after")
@@ -347,6 +363,12 @@ class ActionBound(_Base):
     min_from: str | None = None
     max: float | None = None
     max_from: str | None = None
+
+    @model_validator(mode="after")
+    def _min_lte_max(self) -> ActionBound:
+        if self.min is not None and self.max is not None and self.min > self.max:
+            raise ValueError("action bounds require min <= max")
+        return self
 
 
 class ActionPermissions(_Base):
@@ -437,8 +459,8 @@ class ObjectiveTerm(_Base):
 class ObjectiveAggregation(_Base):
     kind: Literal["expected_value", "expected_value_plus_risk"]
     risk_measure: Literal["none", "CVaR"] = "none"
-    alpha: float | None = None
-    lambda_: float | None = Field(default=None, alias="lambda")
+    alpha: float | None = Field(default=None, gt=0.0, lt=1.0)
+    lambda_: float | None = Field(default=None, alias="lambda", ge=0.0)
 
 
 class Objective(_Base):
@@ -494,7 +516,7 @@ class Evidence(_Base):
     claim: str | None = None
     created_at: datetime | None = None
     created_by: str | None = None
-    confidence: float = 1.0
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
 __all__ = [
