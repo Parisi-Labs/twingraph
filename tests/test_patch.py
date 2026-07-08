@@ -1,14 +1,16 @@
 import pytest
 import twingraph as tg
 from twingraph import (
+    Action,
     Constraint,
+    Evidence,
     SemanticPatch,
     TwinGraph,
     apply_patch,
 )
 from twingraph.errors import ImmutableGraphError, OutOfOrderPatchError, TwinGraphError
 from twingraph.patch import PatchStatus
-from twingraph.primitives import ConstraintExpression
+from twingraph.primitives import ConstraintExpression, DataSource, QueryPolicy
 
 
 def _draft(demo_doc) -> TwinGraph:
@@ -76,6 +78,44 @@ def test_active_graph_material_edit_rejected(demo_doc):
         intent="mutate frozen",
         created_by="tester",
         operations=[{"op": "set_property", "entity_id": "bat", "key": "dt_h", "value": 0.5}],
+    )
+    with pytest.raises(ImmutableGraphError):
+        apply_patch(g, patch)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    [
+        {
+            "op": "add_data_binding",
+            "data_binding": {
+                "id": "db_extra",
+                "variable_id": "price",
+                "source": DataSource(semantic_view="fixture:extra"),
+                "event_time_column": "t",
+                "available_at_column": "pub",
+                "value_column": "v",
+                "unit": "USD/MW.h",
+                "query_policy": QueryPolicy(as_of_required=True),
+            },
+        },
+        {
+            "op": "add_action",
+            "action": Action(id="act_extra", name="Extra", target_entity_id="bat"),
+        },
+        {
+            "op": "add_evidence",
+            "evidence": Evidence(id="ev_extra", kind="test_result", source_ref="test"),
+        },
+    ],
+)
+def test_active_graph_additional_material_ops_rejected(demo_doc, operation):
+    g = TwinGraph.load(demo_doc)
+    patch = SemanticPatch(
+        base_version_id=g.version_id,
+        intent="mutate frozen",
+        created_by="tester",
+        operations=[operation],
     )
     with pytest.raises(ImmutableGraphError):
         apply_patch(g, patch)

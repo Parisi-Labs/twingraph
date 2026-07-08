@@ -33,6 +33,7 @@ from .document import TwinGraph
 from .errors import ImmutableGraphError, OutOfOrderPatchError, TwinGraphError
 from .ids import new_ulid
 from .primitives import (
+    Action,
     Constraint,
     DataBinding,
     Entity,
@@ -136,6 +137,21 @@ class ReplaceModelBinding(_Op):
     model_binding: ModelBinding
 
 
+class AddAction(_Op):
+    op: Literal["add_action"]
+    action: Action
+
+
+class RemoveAction(_Op):
+    op: Literal["remove_action"]
+    action_id: str
+
+
+class ReplaceAction(_Op):
+    op: Literal["replace_action"]
+    action: Action
+
+
 class AddConstraint(_Op):
     op: Literal["add_constraint"]
     constraint: Constraint
@@ -206,7 +222,7 @@ class ResolveAssumption(_Op):
 
 
 Operation = Annotated[
-    AddEntity | RemoveEntity | ReplaceEntity | AddRelation | RemoveRelation | ReplaceRelation | AddVariable | RemoveVariable | ReplaceVariable | AddDataBinding | RemoveDataBinding | ReplaceDataBinding | AddModelBinding | RemoveModelBinding | ReplaceModelBinding | AddConstraint | RemoveConstraint | ReplaceConstraint | AddObjective | RemoveObjective | ReplaceObjective | AddValidator | RemoveValidator | ReplaceValidator | AddEvidence | RemoveEvidence | SetProperty | ResolveAssumption,
+    AddEntity | RemoveEntity | ReplaceEntity | AddRelation | RemoveRelation | ReplaceRelation | AddVariable | RemoveVariable | ReplaceVariable | AddDataBinding | RemoveDataBinding | ReplaceDataBinding | AddModelBinding | RemoveModelBinding | ReplaceModelBinding | AddAction | RemoveAction | ReplaceAction | AddConstraint | RemoveConstraint | ReplaceConstraint | AddObjective | RemoveObjective | ReplaceObjective | AddValidator | RemoveValidator | ReplaceValidator | AddEvidence | RemoveEvidence | SetProperty | ResolveAssumption,
     Field(discriminator="op"),
 ]
 
@@ -274,12 +290,23 @@ _MATERIAL_OP_PREFIXES = (
     "add_model_binding",
     "remove_model_binding",
     "replace_model_binding",
+    "add_action",
+    "remove_action",
+    "replace_action",
+    "add_data_binding",
+    "remove_data_binding",
+    "replace_data_binding",
     "add_constraint",
     "remove_constraint",
     "replace_constraint",
     "add_objective",
     "remove_objective",
     "replace_objective",
+    "add_validator",
+    "remove_validator",
+    "replace_validator",
+    "add_evidence",
+    "remove_evidence",
     "set_property",
 )
 
@@ -396,6 +423,12 @@ def _apply_op(draft: TwinGraph, op: Operation) -> None:
         _apply_remove(draft.model_bindings, op.model_binding_id, "model_binding")
     elif name == "replace_model_binding":
         _apply_replace(draft.model_bindings, op.model_binding, "model_binding")
+    elif name == "add_action":
+        _apply_add(draft.actions, op.action, op.action.id)
+    elif name == "remove_action":
+        _apply_remove(draft.actions, op.action_id, "action")
+    elif name == "replace_action":
+        _apply_replace(draft.actions, op.action, "action")
     elif name == "add_constraint":
         _apply_add(draft.constraints, op.constraint, op.constraint.id)
     elif name == "remove_constraint":

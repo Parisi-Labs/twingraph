@@ -548,6 +548,8 @@
         },
         "confidence": {
           "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Confidence",
           "type": "number"
         },
@@ -682,6 +684,8 @@
         },
         "confidence": {
           "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Confidence",
           "type": "number"
         },
@@ -836,6 +840,8 @@
         },
         "confidence": {
           "default": 1.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Confidence",
           "type": "number"
         }
@@ -1016,6 +1022,8 @@
         "alpha": {
           "anyOf": [
             {
+              "exclusiveMaximum": 1.0,
+              "exclusiveMinimum": 0.0,
               "type": "number"
             },
             {
@@ -1028,6 +1036,7 @@
         "lambda": {
           "anyOf": [
             {
+              "minimum": 0.0,
               "type": "number"
             },
             {

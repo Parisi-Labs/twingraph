@@ -12,6 +12,9 @@ semantic versioning.
   dependency manifests.
 - FMI modelDescription parsing now rejects XML ``DOCTYPE`` and ``ENTITY``
   declarations before stdlib XML parsing.
+- Compiler diagnostics now reject duplicate primitive ids, multiple objectives
+  in the 0.1 plan shape, action-bound unit mismatches, and model binding kind
+  mismatches against the registry's `ModelSpec`.
 
 ### Changed
 
@@ -21,6 +24,10 @@ semantic versioning.
   tokenizer instead of a hand-rolled identifier boundary scanner.
 - The load-time legacy alias normalizer now documents its public-version removal
   target.
+- Patch immutability guards now cover data bindings, actions, validators, and
+  evidence as material operations.
+- Primitive validation now constrains confidence/risk probability fields and
+  rejects inverted numeric ranges.
 
 ## [0.0.2] — 2026-07-02
 

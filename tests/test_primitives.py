@@ -5,6 +5,7 @@ from twingraph import (
     Constraint,
     DataBinding,
     Entity,
+    Evidence,
     ModelBinding,
     Objective,
     Relation,
@@ -12,12 +13,15 @@ from twingraph import (
     Variable,
 )
 from twingraph.primitives import (
+    ActionBound,
+    BindingValidation,
     ConstraintEvaluator,
     ConstraintExpression,
     DataSource,
     ObjectiveAggregation,
     ObjectiveTerm,
     QueryPolicy,
+    VarBounds,
 )
 
 
@@ -147,6 +151,44 @@ def test_objective_lambda_alias():
     )
     assert o.aggregation.lambda_ == 0.5
     assert o.aggregation.model_dump(by_alias=True)["lambda"] == 0.5
+
+
+def test_confidence_fields_are_probabilities():
+    with pytest.raises(ValidationError):
+        Entity(id="bat", type_ref="metis.energy.Battery@1", name="BESS", confidence=1.1)
+    with pytest.raises(ValidationError):
+        DataBinding(
+            id="db",
+            variable_id="price",
+            source=DataSource(semantic_view="fixture:x"),
+            event_time_column="t",
+            available_at_column="pub",
+            value_column="p",
+            unit="USD/MW.h",
+            confidence=-0.1,
+        )
+    with pytest.raises(ValidationError):
+        Evidence(id="ev", kind="test_result", source_ref="x", confidence=2.0)
+
+
+def test_numeric_ranges_are_semantically_validated():
+    with pytest.raises(ValidationError):
+        VarBounds(min=10.0, max=1.0)
+    with pytest.raises(ValidationError):
+        BindingValidation(allowed_min=10.0, allowed_max=1.0)
+    with pytest.raises(ValidationError):
+        ActionBound(min=10.0, max=1.0)
+
+
+def test_objective_risk_parameters_are_bounded():
+    with pytest.raises(ValidationError):
+        ObjectiveAggregation.model_validate(
+            {"kind": "expected_value_plus_risk", "risk_measure": "CVaR", "alpha": 1.0}
+        )
+    with pytest.raises(ValidationError):
+        ObjectiveAggregation.model_validate(
+            {"kind": "expected_value_plus_risk", "risk_measure": "CVaR", "lambda": -0.1}
+        )
 
 
 def test_legacy_alias_normalization(demo_doc):

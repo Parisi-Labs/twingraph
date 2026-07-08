@@ -12,6 +12,7 @@ runtime code. stdlib + pydantic only.
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import UTC, datetime
 from typing import Any
 
@@ -298,6 +299,7 @@ def _stage_canonicalize(ctx: _Ctx) -> dict[str, Any]:
 
     doc = ctx.graph.model_dump(mode="json")
     normalized = canonicalize(doc)
+    _validate_graph_shape(ctx)
     computed = ctx_content_hash(ctx.graph)
     declared = ctx.graph.content_hash
     if declared is not None and declared != computed:
@@ -308,6 +310,55 @@ def _stage_canonicalize(ctx: _Ctx) -> dict[str, Any]:
             "canonicalize",
         )
     return normalized
+
+
+def _validate_graph_shape(ctx: _Ctx) -> None:
+    id_locations = _primitive_id_locations(ctx.graph)
+    counts = Counter(item_id for _, item_id in id_locations)
+    for ident, count in sorted(counts.items()):
+        if count <= 1:
+            continue
+        refs = [
+            {"kind": kind, "id": item_id}
+            for kind, item_id in id_locations
+            if item_id == ident
+        ]
+        ctx.add(
+            "error",
+            CODES.DUPLICATE_ID,
+            f"primitive id '{ident}' appears {count} times; ids must be globally unique",
+            "canonicalize",
+            {"id": ident, "refs": refs},
+        )
+
+    if len(ctx.graph.objectives) > 1:
+        ctx.add(
+            "error",
+            CODES.STRUCTURE,
+            "TwinGraph 0.1 supports at most one objective; objective selection "
+            "semantics are not yet defined",
+            "canonicalize",
+            {"objectives": [o.id for o in ctx.graph.objectives]},
+        )
+
+
+def _primitive_id_locations(graph: TwinGraph) -> list[tuple[str, str]]:
+    return [
+        (kind, item.id)
+        for kind, seq in (
+            ("entity", graph.entities),
+            ("relation", graph.relations),
+            ("variable", graph.variables),
+            ("data_binding", graph.data_bindings),
+            ("model_binding", graph.model_bindings),
+            ("action", graph.actions),
+            ("constraint", graph.constraints),
+            ("objective", graph.objectives),
+            ("validator", graph.validators),
+            ("evidence", graph.evidence),
+        )
+        for item in seq
+    ]
 
 
 # --- stage 2 ---------------------------------------------------------------
@@ -733,6 +784,31 @@ def _stage_validate_units(ctx: _Ctx, types: TypeRegistry, units: UnitRegistry) -
                     "validate_units",
                     {"action": a.id, "unit": bound.unit},
                 )
+                continue
+            controlled = _controlled_variable_for_bound(ctx, a, key)
+            if controlled is not None and not units.compatible(bound.unit, controlled.unit):
+                ctx.add(
+                    "error",
+                    CODES.UNIT_MISMATCH,
+                    f"action '{a.id}' bound '{key}' unit '{bound.unit}' incompatible "
+                    f"with control variable '{controlled.id}' unit '{controlled.unit}'",
+                    "validate_units",
+                    {
+                        "action": a.id,
+                        "bound": key,
+                        "variable": controlled.id,
+                        "unit": bound.unit,
+                        "expected": controlled.unit,
+                    },
+                )
+
+
+def _controlled_variable_for_bound(ctx: _Ctx, action, bound_key: str):
+    for variable_id in action.control_variables:
+        variable = ctx.variables.get(variable_id)
+        if variable is not None and bound_key in (variable.id, variable.name):
+            return variable
+    return None
 
 
 def _property_unit(prop: Any) -> str | None:
@@ -816,6 +892,20 @@ def _stage_resolve_models(ctx: _Ctx, models: ModelRegistry, units: UnitRegistry)
             )
             continue
         ctx._callable_keys[m.model_ref] = spec.callable_key
+        if m.kind != spec.kind:
+            ctx.add(
+                "error",
+                CODES.MODEL_KIND_MISMATCH,
+                f"model_binding '{m.id}' declares kind '{m.kind}' but registry "
+                f"ModelSpec for '{m.model_ref}' declares kind '{spec.kind}'",
+                "resolve_models",
+                {
+                    "model_binding": m.id,
+                    "kind": m.kind,
+                    "expected": spec.kind,
+                    "model_ref": m.model_ref,
+                },
+            )
         _validate_model_io_units(ctx, m, spec, units)
         if m.kind in FOREIGN_MODEL_KINDS:
             # §31.3: a retained, VALIDATED foreign reference — not a dead enum

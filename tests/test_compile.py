@@ -57,12 +57,12 @@ def test_dependency_order_is_not_drawing_order(demo_doc, model_registry):
         demo_doc,
         lambda d: d["model_bindings"].insert(
             0,
-            {
-                "id": "mb_explain",
-                "kind": "explanation_template",
-                "model_ref": "registry://metis.expressions.energy_revenue@1.0.0",
-                "inputs": {"soc": "soc"},
-                "outputs": {},
+                {
+                    "id": "mb_explain",
+                    "kind": "derived_expression",
+                    "model_ref": "registry://metis.expressions.energy_revenue@1.0.0",
+                    "inputs": {"soc": "soc"},
+                    "outputs": {},
             },
         ),
     )
@@ -125,6 +125,67 @@ def test_unknown_model_ref_rejected(demo_doc, model_registry):
     res = _compile(doc, model_registry)
     assert not res.ok
     assert CODES.UNKNOWN_MODEL in _codes(res)
+
+
+def test_duplicate_primitive_ids_rejected(demo_doc, model_registry):
+    doc = mutate(
+        demo_doc,
+        lambda d: d["variables"].append(
+            {
+                "id": "price",
+                "owner_ref": "node",
+                "name": "duplicate price",
+                "role": "observed",
+                "unit": "USD/MW.h",
+            }
+        ),
+    )
+    res = _compile(doc, model_registry)
+    assert not res.ok
+    assert CODES.DUPLICATE_ID in _codes(res)
+
+
+def test_multiple_objectives_rejected(demo_doc, model_registry):
+    def edit(d):
+        d["objectives"].append(
+            {
+                "id": "o_second",
+                "name": "Second objective",
+                "terms": [
+                    {
+                        "id": "t_second",
+                        "direction": "maximize",
+                        "measure_ref": "metric:alternate",
+                    }
+                ],
+                "aggregation": {"kind": "expected_value"},
+            }
+        )
+
+    doc = mutate(demo_doc, edit)
+    res = _compile(doc, model_registry)
+    assert not res.ok
+    assert CODES.STRUCTURE in _codes(res)
+
+
+def test_action_bound_unit_must_match_control_variable(demo_doc, model_registry):
+    doc = mutate(
+        demo_doc,
+        lambda d: d["actions"][0]["bounds"]["charge_power"].__setitem__("unit", "USD/MW.h"),
+    )
+    res = _compile(doc, model_registry)
+    assert not res.ok
+    assert CODES.UNIT_MISMATCH in _codes(res)
+
+
+def test_model_binding_kind_must_match_registry_spec(demo_doc, model_registry):
+    doc = mutate(
+        demo_doc,
+        lambda d: d["model_bindings"][0].__setitem__("kind", "forecast_model"),
+    )
+    res = _compile(doc, model_registry)
+    assert not res.ok
+    assert CODES.MODEL_KIND_MISMATCH in _codes(res)
 
 
 def test_leakage_rejected_when_horizon_availability_dropped(demo_doc, model_registry):
