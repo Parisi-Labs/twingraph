@@ -120,11 +120,13 @@ in one pass); raises ONLY on misuse (null registry). Eleven stages:
    data bindings, action bounds, and Quantity-valued entity properties checked
    against their registered `TypeDef` property units.
 6. **resolve_models** — `TG_UNKNOWN_MODEL`; forecast outputs must map to
-   `forecast_distribution` variables. If a `ModelSpec.io_contract` declares port
-   units, bound variable units are checked and mismatches emit `TG_IO_CONTRACT`.
+   `forecast_distribution` variables. If a `ModelSpec.io_contract` declares a
+   side, binding names are checked against it (inputs/outputs required by
+   default; parameters optional unless explicitly marked `required: true`) and
+   declared port units are checked; violations emit `TG_IO_CONTRACT`.
    **Foreign-reference kinds** (`fmu`,
    `modelica_class`, §31.3) are VALIDATED — `model_ref` resolved, io_contract
-   checked (port-name sets must match the contract bidirectionally, or, for an
+   checked (contract names must match required ports, or, for an
    empty contract, the binding must write ≥1 output; violation → `TG_IO_CONTRACT`)
    — and the resulting component is flagged `external=True` (NOT in
    `EXECUTABLE_MODEL_KINDS`; an FMI/Modelica runtime executes it, twingraph does

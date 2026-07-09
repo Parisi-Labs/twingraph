@@ -472,3 +472,49 @@ def test_model_io_contract_units_checked():
     bad = _compile(g, _ContractRegistry("request/s"))
     assert not bad.ok
     assert tg.CODES.IO_CONTRACT in {d.code for d in bad.report.errors()}
+
+
+def test_native_model_contract_rejects_unknown_and_missing_ports():
+    g = tg.TwinGraph.new("NativeContract", namespace="metis.demo.native", created_by="test")
+    g.entities.append(
+        tg.Entity(
+            id="facility",
+            type_ref="metis.datacenter.Facility@1",
+            name="DC",
+            properties={"power_capacity_mw": 2.0},
+        )
+    )
+    g.variables.extend(
+        [
+            tg.Variable(id="demand", owner_ref="facility", name="load", role="exogenous", unit="MW"),
+            tg.Variable(id="load", owner_ref="facility", name="forecast_load", role="derived", unit="MW"),
+        ]
+    )
+    g.model_bindings.append(
+        tg.ModelBinding(
+            id="mb_load",
+            kind="native_component",
+            model_ref="registry://metis.components.facility_load@1.0.0",
+            inputs={"unexpected": "demand"},
+            outputs={},
+        )
+    )
+
+    class Registry(_ContractRegistry):
+        def __init__(self):
+            self._spec = ModelSpec(
+                model_ref="registry://metis.components.facility_load@1.0.0",
+                kind="native_component",
+                io_contract=IOContract(
+                    inputs={"demand": {"unit": "MW"}},
+                    outputs={"load": {"unit": "MW"}},
+                ),
+                callable_key="facility_load",
+            )
+
+    result = _compile(g, Registry())
+    assert not result.ok
+    diagnostics = [d for d in result.report.errors() if d.code == tg.CODES.IO_CONTRACT]
+    assert any("unknown=['unexpected']" in d.message for d in diagnostics)
+    assert any("missing=['demand']" in d.message for d in diagnostics)
+    assert any("missing=['load']" in d.message for d in diagnostics)

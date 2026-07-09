@@ -128,6 +128,14 @@ such as `TG_UNKNOWN_TYPE`, `TG_DANGLING_REF`, `TG_UNIT_MISMATCH`,
 `TG_IO_CONTRACT`, `TG_LEAKAGE`, or `TG_CYCLE`. If the graph compiles, the result
 contains a data-only `ExecutablePlan` that your runtime can execute.
 
+When a model registry declares an `IOContract`, TwinGraph checks its port names
+as well as units for every model kind. Declared input/output ports are required
+by default; set `{"required": False}` on an optional port. Declared parameters
+reject unknown names and are optional by default so an FMI or Modelica model can
+use its own defaults (set `{"required": True}` to require a binding). The plan
+also carries the source adapter, query freshness/range policy, and variable
+initialization/uncertainty metadata needed by a runtime.
+
 **The core references models; your application registers them.**
 
 Model references look like `registry://metis.components.battery_linear@1.0.0`.
