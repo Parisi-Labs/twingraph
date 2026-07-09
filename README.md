@@ -48,6 +48,12 @@ The proprietary part of a production system should live outside this package:
 model implementations, data connectors, forecasting systems, optimizers,
 settlement logic, serving APIs, and customer-specific workflows.
 
+For a complete storage example—not just an asset diagram—see the [public
+physical BESS walkthrough](examples/public_physical_bess_01.md). It traces the
+same typed graph from physical topology and decision-time data through external
+health models, health-aware dispatch, approval gates, shadow evaluation, and
+operator explanation.
+
 ## Quickstart
 
 Load the included illustrative battery twin and compile it against a small model

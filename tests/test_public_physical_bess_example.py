@@ -13,14 +13,18 @@ from twingraph.registry import IOContract, ModelSpec
 class _PublicBessModelRegistry:
     def __init__(self) -> None:
         self._specs = {
-            "registry://example.bess.dispatch_linear@1.0.0": ModelSpec(
-                model_ref="registry://example.bess.dispatch_linear@1.0.0",
-                kind="native_component",
+            "registry://example.bess.dispatch_optimizer@1.0.0": ModelSpec(
+                model_ref="registry://example.bess.dispatch_optimizer@1.0.0",
+                kind="optimizer",
                 io_contract=IOContract(
-                    inputs={"price": {"unit": "USD/MW.h"}, "state_of_charge": {"unit": "MW.h"}},
+                    inputs={
+                        "price": {"unit": "USD/MW.h"},
+                        "state_of_charge": {"unit": "MW.h"},
+                        "available_discharge_power": {"unit": "MW"},
+                    },
                     outputs={"charge_power": {"unit": "MW"}, "discharge_power": {"unit": "MW"}},
                 ),
-                callable_key="example_bess_dispatch_linear",
+                callable_key="example_bess_dispatch_optimizer",
             ),
             "registry://example.bess.health_thermal_fmu@1.0.0": ModelSpec(
                 model_ref="registry://example.bess.health_thermal_fmu@1.0.0",
@@ -31,6 +35,40 @@ class _PublicBessModelRegistry:
                     params={"nominal_energy_mwh": {"unit": "MW.h"}},
                 ),
                 callable_key="example_bess_health_thermal_fmu",
+            ),
+            "registry://example.bess.available_power@1.0.0": ModelSpec(
+                model_ref="registry://example.bess.available_power@1.0.0",
+                kind="calibration_model",
+                io_contract=IOContract(
+                    inputs={"state_of_health": {"unit": "ratio"}, "cell_temperature": {"unit": "degC"}},
+                    outputs={"available_discharge_power": {"unit": "MW"}},
+                ),
+                callable_key="example_bess_available_power",
+            ),
+            "registry://example.bess.health_calibration@1.0.0": ModelSpec(
+                model_ref="registry://example.bess.health_calibration@1.0.0",
+                kind="calibration_model",
+                io_contract=IOContract(
+                    inputs={
+                        "estimated_state_of_health": {"unit": "ratio"},
+                        "measured_state_of_health": {"unit": "ratio"},
+                    },
+                    outputs={"health_model_error": {"unit": "ratio"}},
+                ),
+                callable_key="example_bess_health_calibration",
+            ),
+            "registry://example.bess.dispatch_value@1.0.0": ModelSpec(
+                model_ref="registry://example.bess.dispatch_value@1.0.0",
+                kind="derived_expression",
+                io_contract=IOContract(
+                    inputs={
+                        "price": {"unit": "USD/MW.h"},
+                        "charge_power": {"unit": "MW"},
+                        "discharge_power": {"unit": "MW"},
+                    },
+                    outputs={"expected_margin": {"unit": "USD"}},
+                ),
+                callable_key="example_bess_dispatch_value",
             ),
         }
 
@@ -69,5 +107,21 @@ def test_public_physical_bess_example_compiles_and_retains_external_model():
         "metis.bess.ThermalManagementSystem@1",
     }
     components = {component.model_binding_id: component for component in result.plan.components}
-    assert components["mb_dispatch"].external is False
+    assert set(components) == {
+        "mb_dispatch",
+        "mb_health_fmu",
+        "mb_availability",
+        "mb_health_calibration",
+        "mb_settlement",
+    }
+    assert components["mb_dispatch"].kind == "optimizer"
+    assert components["mb_availability"].external is False
+    assert components["mb_health_calibration"].external is False
+    assert components["mb_settlement"].external is False
     assert components["mb_health_fmu"].external is True
+    assert all(query.leakage_safe for query in result.plan.query_plan)
+    assert graph.actions[0].execution_mode == "advisory"
+    assert graph.actions[0].requires_approval is True
+    diagram = tg.to_mermaid(graph)
+    assert "Container fleet" in diagram
+    assert "Shadow dispatch evaluation" in diagram
