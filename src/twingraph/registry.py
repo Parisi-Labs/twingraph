@@ -400,6 +400,74 @@ POWER_TYPE_PACK = TypePack(
 )
 
 
+BESS_TYPE_PACK = TypePack(
+    name="metis.energy.bess@1",
+    description=(
+        "Physical BESS subasset vocabulary for containerized storage, controls, "
+        "power conversion, and thermal operation."
+    ),
+    type_defs=(
+        TypeDef(
+            type_ref="metis.bess.ContainerFleet@1",
+            kind="entity",
+            title="Battery container fleet",
+            required_properties=(PropSpec("container_count", unit="count"),),
+            optional_properties=(
+                PropSpec("container_energy_mwh", unit="MW.h", required=False),
+                PropSpec("container_power_mw", unit="MW", required=False),
+            ),
+            ports=("dc_power", "thermal", "telemetry", "controls"),
+        ),
+        TypeDef(
+            type_ref="metis.bess.BatteryModuleFleet@1",
+            kind="entity",
+            title="Battery module fleet",
+            required_properties=(
+                PropSpec("module_count", unit="count"),
+                PropSpec("nominal_energy_mwh", unit="MW.h"),
+            ),
+            required_variables=(
+                VarSpec("state_of_health", role="derived", unit="ratio", required=False),
+                VarSpec("cell_temperature", role="derived", unit="degC", required=False),
+            ),
+            ports=("dc_power", "thermal", "telemetry"),
+        ),
+        TypeDef(
+            type_ref="metis.bess.PowerConversionSystem@1",
+            kind="entity",
+            title="Battery power conversion system",
+            required_properties=(PropSpec("ac_power_max_mw", unit="MW"),),
+            optional_properties=(
+                PropSpec("dc_power_max_mw", unit="MW", required=False),
+                PropSpec("efficiency", unit="ratio", required=False),
+                PropSpec("ac_voltage_kv", unit="kV", required=False),
+            ),
+            ports=("dc_power", "ac_power", "controls", "telemetry"),
+        ),
+        TypeDef(
+            type_ref="metis.bess.BatteryManagementSystem@1",
+            kind="entity",
+            title="Battery management system",
+            optional_properties=(
+                PropSpec("vendor", data_type="string", required=False),
+                PropSpec("firmware_version", data_type="string", required=False),
+            ),
+            ports=("telemetry", "controls", "safety"),
+        ),
+        TypeDef(
+            type_ref="metis.bess.ThermalManagementSystem@1",
+            kind="entity",
+            title="Battery thermal management system",
+            required_properties=(PropSpec("cooling_capacity_mw", unit="MW_th"),),
+            optional_properties=(
+                PropSpec("temperature_setpoint_deg_c", unit="degC", required=False),
+            ),
+            ports=("thermal", "controls", "telemetry"),
+        ),
+    ),
+)
+
+
 DATA_CENTER_TYPE_PACK = TypePack(
     name="metis.datacenter.core@1",
     description="Data-center physical and workload vocabulary tied back to power.",
@@ -685,6 +753,7 @@ PLATFORM_ANALYSIS_TYPE_PACK = TypePack(
 BUILTIN_TYPE_PACKS: tuple[TypePack, ...] = (
     RELATION_TYPE_PACK,
     POWER_TYPE_PACK,
+    BESS_TYPE_PACK,
     DATA_CENTER_TYPE_PACK,
     OPERATIONS_TYPE_PACK,
     DATA_TYPE_PACK,
@@ -714,6 +783,7 @@ BUILTIN_TYPE_REGISTRY = build_type_registry()
 
 
 __all__ = [
+    "BESS_TYPE_PACK",
     "BUILTIN_TYPE_PACKS",
     "BUILTIN_TYPE_REGISTRY",
     "DATA_CENTER_TYPE_PACK",

@@ -142,6 +142,9 @@ The built-in registry is assembled from data-only type packs:
 - `POWER_TYPE_PACK`: batteries, market nodes, interconnects, solar, wind,
   generators, transformers, transmission lines, substations, loads, inverters,
   fuel supply, and weather regions.
+- `BESS_TYPE_PACK`: container and module fleets, power conversion, battery
+  management, and thermal management subsystems for physically legible storage
+  twins.
 - `DATA_CENTER_TYPE_PACK`: facilities, racks, cooling loops, UPS, and workloads.
 - `OPERATIONS_TYPE_PACK`: warehouses, factories, production lines, port
   terminals, logistics nodes, transport routes, and fleet vehicles.

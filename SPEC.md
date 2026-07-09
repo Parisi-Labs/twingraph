@@ -162,6 +162,8 @@ data-only `TypePack`s:
 - `POWER_TYPE_PACK`: storage, market nodes, interconnects, solar, wind,
   generators, inverters, transformers, transmission lines, substations, loads,
   fuel supply, and weather regions.
+- `BESS_TYPE_PACK`: battery container/module fleets, power conversion, battery
+  management, and thermal-management subassets.
 - `DATA_CENTER_TYPE_PACK`: facilities, racks, cooling loops, UPS, and workloads.
 - `OPERATIONS_TYPE_PACK`: warehouses, factories, production lines, port
   terminals, logistics nodes, transport routes, and fleet vehicles.
