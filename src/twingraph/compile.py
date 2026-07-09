@@ -38,6 +38,7 @@ class QueryPlan(BaseModel):
 
     data_binding_id: str
     variable_id: str
+    adapter: str
     semantic_view: str
     filters: dict[str, Any] = Field(default_factory=dict)
     value_column: str
@@ -49,7 +50,11 @@ class QueryPlan(BaseModel):
     deduplication: str = "latest_available_at"
     latest_before_issue_time: bool | None = None
     missing_value_policy: str = "fail_required_horizon"
+    max_lookback: str | None = None
     expected_resolution: str | None = None
+    max_staleness: str | None = None
+    allowed_min: float | None = None
+    allowed_max: float | None = None
     grain: list[str] = Field(default_factory=list)
     leakage_safe: bool = True
 
@@ -907,12 +912,13 @@ def _stage_resolve_models(ctx: _Ctx, models: ModelRegistry, units: UnitRegistry)
                 },
             )
         _validate_model_io_units(ctx, m, spec, units)
+        _validate_model_io_contract(ctx, m, spec)
         if m.kind in FOREIGN_MODEL_KINDS:
             # §31.3: a retained, VALIDATED foreign reference — not a dead enum
             # and not a MODEL_NOT_EXECUTABLE warning. The model_ref resolved
             # above; now validate the io_contract and flag the component
             # external (an FMI/Modelica runtime executes it, not twingraph).
-            _validate_foreign_io_contract(ctx, m, spec)
+            _validate_foreign_model_binding(ctx, m, spec)
             ctx.external_bindings.add(m.id)
         elif m.kind not in EXECUTABLE_MODEL_KINDS:
             ctx.add(
@@ -987,51 +993,64 @@ def _validate_model_io_units(ctx: _Ctx, m, spec, units: UnitRegistry) -> None:
                 )
 
 
-def _validate_foreign_io_contract(ctx: _Ctx, m, spec) -> None:
-    """Validate a foreign-reference binding's io_contract (§31.3).
+def _validate_model_io_contract(ctx: _Ctx, m, spec) -> None:
+    """Validate every declared ModelSpec IOContract, not only foreign models.
 
-    If the resolved ModelSpec's io_contract declares input/output ports, the
-    binding's ``inputs``/``outputs`` port-name sets must match the contract
-    bidirectionally. If the contract is empty, the binding must still write
-    graph state (>=1 output mapping) — a foreign component that produces nothing
-    cannot participate in a decision twin. Violations → TG_IO_CONTRACT.
+    A non-empty input/output mapping is an interface contract: unknown bound
+    ports are always rejected and entries are required unless their metadata
+    explicitly says ``required: false``. Parameter declarations reject unknown
+    parameter names; parameters themselves are optional by default because FMI
+    models commonly provide defaults, and become required with
+    ``required: true``. This lets a model registry be permissive when it has no
+    contract and exact when it does, without making model kind the policy.
     """
     contract = spec.io_contract
-    declared_inputs = set(getattr(contract, "inputs", {}) or {})
-    declared_outputs = set(getattr(contract, "outputs", {}) or {})
-
-    if not declared_inputs and not declared_outputs:
-        if not m.outputs:
+    for side, bindings, declared in (
+        ("input", m.inputs, contract.inputs),
+        ("output", m.outputs, contract.outputs),
+        ("parameter", m.parameters, contract.params),
+    ):
+        if not declared:
+            continue
+        supplied = set(bindings)
+        declared_names = set(declared)
+        unknown = sorted(supplied - declared_names)
+        required_default = side != "parameter"
+        missing = sorted(
+            name
+            for name, port_spec in declared.items()
+            if port_spec.get("required", required_default) and name not in supplied
+        )
+        if unknown or missing:
             ctx.add(
                 "error",
                 CODES.IO_CONTRACT,
-                f"foreign model_binding '{m.id}' ({m.kind}) has no io_contract "
-                "and writes no graph state (needs >=1 output mapping)",
+                f"model_binding '{m.id}' {side} names violate io_contract "
+                f"(unknown={unknown}, missing={missing})",
                 "resolve_models",
-                {"model_binding": m.id, "kind": m.kind},
+                {
+                    "model_binding": m.id,
+                    "side": side,
+                    "unknown": unknown,
+                    "missing": missing,
+                    "expected": sorted(declared_names),
+                },
             )
-        return
 
-    if set(m.inputs) != declared_inputs:
-        ctx.add(
-            "error",
-            CODES.IO_CONTRACT,
-            f"foreign model_binding '{m.id}' ({m.kind}) input ports "
-            f"{sorted(m.inputs)} do not match io_contract inputs "
-            f"{sorted(declared_inputs)}",
-            "resolve_models",
-            {"model_binding": m.id, "expected": sorted(declared_inputs)},
-        )
-    if set(m.outputs) != declared_outputs:
-        ctx.add(
-            "error",
-            CODES.IO_CONTRACT,
-            f"foreign model_binding '{m.id}' ({m.kind}) output ports "
-            f"{sorted(m.outputs)} do not match io_contract outputs "
-            f"{sorted(declared_outputs)}",
-            "resolve_models",
-            {"model_binding": m.id, "expected": sorted(declared_outputs)},
-        )
+
+def _validate_foreign_model_binding(ctx: _Ctx, m, spec) -> None:
+    """Apply the foreign-only participation rule after generic contract checks."""
+    contract = spec.io_contract
+    if contract.inputs or contract.outputs or m.outputs:
+        return
+    ctx.add(
+        "error",
+        CODES.IO_CONTRACT,
+        f"foreign model_binding '{m.id}' ({m.kind}) has no io_contract "
+        "and writes no graph state (needs >=1 output mapping)",
+        "resolve_models",
+        {"model_binding": m.id, "kind": m.kind},
+    )
 
 
 # --- stage 7 ---------------------------------------------------------------
@@ -1193,6 +1212,7 @@ def _stage_query_plan(ctx: _Ctx) -> list[QueryPlan]:
             QueryPlan(
                 data_binding_id=b.id,
                 variable_id=b.variable_id,
+                adapter=b.source.adapter,
                 semantic_view=b.source.semantic_view,
                 filters=dict(b.source.filters),
                 value_column=b.value_column,
@@ -1204,9 +1224,13 @@ def _stage_query_plan(ctx: _Ctx) -> list[QueryPlan]:
                 deduplication=b.query_policy.deduplication,
                 latest_before_issue_time=b.query_policy.latest_before_issue_time,
                 missing_value_policy=b.query_policy.missing_value_policy,
+                max_lookback=b.query_policy.max_lookback,
                 expected_resolution=(
                     b.validation.expected_resolution if b.validation else None
                 ),
+                max_staleness=b.validation.max_staleness if b.validation else None,
+                allowed_min=b.validation.allowed_min if b.validation else None,
+                allowed_max=b.validation.allowed_max if b.validation else None,
                 grain=list(b.grain),
                 leakage_safe=leakage_safe,
             )
@@ -1263,9 +1287,16 @@ def _build_plan(
         v.id: {
             "unit": v.unit,
             "role": v.role,
+            "data_type": v.data_type,
             "temporal_semantics": v.temporal_semantics,
             "owner_ref": v.owner_ref,
             "bounds": v.bounds.model_dump() if v.bounds else None,
+            "resolution": v.resolution,
+            "initialization": (
+                v.initialization.model_dump(exclude_none=True) if v.initialization else None
+            ),
+            "uncertainty": v.uncertainty.model_dump(exclude_none=True) if v.uncertainty else None,
+            "required_for": list(v.required_for),
         }
         for v in graph.variables
     }

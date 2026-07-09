@@ -116,6 +116,15 @@ class InMemoryTypeRegistry:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class IOContract:
+    """Named model interface metadata.
+
+    Input/output entries are required by default when a side is declared. Use
+    ``{"required": False}`` for an optional port. Parameter entries are
+    optional by default (to preserve a model's default parameter values); use
+    ``{"required": True}`` when a binding must supply one. Every entry may
+    additionally declare ``unit`` for compile-time unit compatibility checks.
+    """
+
     inputs: dict[str, dict[str, Any]] = field(default_factory=dict)
     outputs: dict[str, dict[str, Any]] = field(default_factory=dict)
     params: dict[str, dict[str, Any]] = field(default_factory=dict)

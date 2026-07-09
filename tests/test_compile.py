@@ -216,6 +216,31 @@ def test_query_plan_marks_demo_leakage_safe(demo_doc, model_registry):
     assert qp.as_of_required is True
     assert qp.latest_before_issue_time is True
     assert qp.missing_value_policy == "fail_required_horizon"
+    assert qp.adapter == "central_warehouse"
+    assert qp.max_lookback is None
+    assert qp.max_staleness is None
+    assert qp.allowed_min is None
+    assert qp.allowed_max is None
+
+
+def test_plan_retains_runtime_variable_metadata(demo_doc, model_registry):
+    doc = mutate(
+        demo_doc,
+        lambda d: d["variables"][0].update(
+            {
+                "initialization": {"strategy": "fixed", "value": 6.0},
+                "uncertainty": {"kind": "deterministic"},
+                "required_for": ["tomorrow_dispatch"],
+            }
+        ),
+    )
+    res = _compile(doc, model_registry)
+    soc = res.plan.variables["soc"]
+    assert soc["data_type"] == "float"
+    assert soc["resolution"] == "PT1H"
+    assert soc["initialization"] == {"strategy": "fixed", "value": 6.0}
+    assert soc["uncertainty"] == {"kind": "deterministic"}
+    assert soc["required_for"] == ["tomorrow_dispatch"]
 
 
 def test_leakage_rejected_when_horizon_disables_as_of(demo_doc, model_registry):

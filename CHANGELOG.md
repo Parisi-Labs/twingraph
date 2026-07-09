@@ -6,6 +6,19 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Compiled query plans now retain adapter, lookback, freshness, and allowed
+  value-range metadata; executable plans retain variable data type, resolution,
+  initialization, uncertainty, and program requirements.
+
+### Changed
+
+- `ModelSpec.io_contract` names now constrain native bindings as well as FMI /
+  Modelica references. Declared input/output ports are required by default,
+  optional ports use `required: false`, and parameter declarations reject
+  unknown names while retaining model-default semantics by default.
+
 ## [0.0.3] — 2026-07-08
 
 ### Added
