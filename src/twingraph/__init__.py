@@ -90,6 +90,7 @@ from .programs import (
     ProgramRegistry,
 )
 from .registry import (
+    BESS_TYPE_PACK,
     BUILTIN_TYPE_PACKS,
     BUILTIN_TYPE_REGISTRY,
     DATA_CENTER_TYPE_PACK,
@@ -123,6 +124,7 @@ from .viz import to_dot, to_mermaid
 __version__ = "0.0.3"
 
 __all__ = [
+    "BESS_TYPE_PACK",
     "BUILTIN_PROGRAM_REGISTRY",
     "BUILTIN_TYPE_PACKS",
     "BUILTIN_TYPE_REGISTRY",

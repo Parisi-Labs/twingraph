@@ -31,6 +31,11 @@ def test_builtin_registry_is_power_first_but_cross_domain():
         "metis.energy.TransmissionLine@1",
         "metis.energy.Transformer@1",
         "metis.energy.Substation@1",
+        "metis.bess.ContainerFleet@1",
+        "metis.bess.BatteryModuleFleet@1",
+        "metis.bess.PowerConversionSystem@1",
+        "metis.bess.BatteryManagementSystem@1",
+        "metis.bess.ThermalManagementSystem@1",
     ):
         assert tg.BUILTIN_TYPE_REGISTRY.has(ref)
 
@@ -78,6 +83,14 @@ def test_analysis_pack_is_exported_and_optional():
     power_only = tg.build_type_registry((tg.RELATION_TYPE_PACK, tg.POWER_TYPE_PACK))
     assert power_only.has("metis.energy.Battery@1")
     assert not power_only.has("metis.analysis.CounterfactualSettlement@1")
+
+
+def test_bess_pack_is_exported_and_composable():
+    registry = tg.build_type_registry(
+        (tg.RELATION_TYPE_PACK, tg.POWER_TYPE_PACK, tg.BESS_TYPE_PACK)
+    )
+    assert registry.has("metis.energy.Battery@1")
+    assert registry.has("metis.bess.PowerConversionSystem@1")
 
 
 def test_analysis_lineage_twin_compiles(model_registry):

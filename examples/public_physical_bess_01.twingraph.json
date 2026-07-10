@@ -1,0 +1,329 @@
+{
+  "schema_version": "twingraph/0.1",
+  "graph_id": "01JZPHYSBESS00000000000001",
+  "version_id": "01JZPHYSBESS0000000000V001",
+  "workspace_id": "00000000000000000000000000",
+  "name": "Public_Physical_BESS_01",
+  "namespace": "metis.demo.public_physical_bess_01",
+  "status": "draft",
+  "created_at": "2026-07-09T00:00:00Z",
+  "created_by": "twingraph.examples",
+  "provenance": {
+    "note": "Synthetic public example. Counts, ratings, topology, and model references are illustrative—not an as-built plant representation."
+  },
+  "entities": [
+    {
+      "id": "bess",
+      "type_ref": "metis.energy.Battery@1",
+      "name": "Illustrative 120 MW / 240 MWh BESS",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {
+        "power_max_mw": 120.0,
+        "energy_max_mwh": 240.0,
+        "eta_charge": 0.96,
+        "eta_discharge": 0.96,
+        "soc_min_mwh": 24.0,
+        "soc_init_mwh": 120.0,
+        "terminal_reserve_mwh": 48.0,
+        "dt_h": 0.25
+      },
+      "tags": ["bess", "physical-model", "synthetic"],
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "containers",
+      "type_ref": "metis.bess.ContainerFleet@1",
+      "name": "Container fleet",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"container_count": 48, "container_energy_mwh": 5.0},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "modules",
+      "type_ref": "metis.bess.BatteryModuleFleet@1",
+      "name": "Battery module fleet",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"module_count": 5760, "nominal_energy_mwh": 240.0},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "pcs",
+      "type_ref": "metis.bess.PowerConversionSystem@1",
+      "name": "Power conversion system",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"ac_power_max_mw": 120.0, "dc_power_max_mw": 125.0, "efficiency": 0.98},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "bms",
+      "type_ref": "metis.bess.BatteryManagementSystem@1",
+      "name": "Battery management system",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"vendor": "illustrative"},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "thermal",
+      "type_ref": "metis.bess.ThermalManagementSystem@1",
+      "name": "Thermal management system",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"cooling_capacity_mw": 2.0, "temperature_setpoint_deg_c": 25.0},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "node",
+      "type_ref": "metis.energy.MarketNode@1",
+      "name": "Illustrative market node",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"market": "DEMO", "location_id": "PUBLIC_BESS_NODE"},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "intertie",
+      "type_ref": "metis.energy.Interconnect@1",
+      "name": "Point of interconnection",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"import_limit_mw": 120.0, "export_limit_mw": 120.0},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "weather",
+      "type_ref": "metis.energy.WeatherRegion@1",
+      "name": "Ambient weather context",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "physical_model",
+      "type_ref": "metis.model.PhysicalModel@1",
+      "name": "Health and thermal model boundary",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"model_ref": "registry://example.bess.health_thermal_fmu@1.0.0"},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "decision_engine",
+      "type_ref": "metis.market.CoOptimizationEngine@1",
+      "name": "Dispatch decision engine",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"role": "risk-aware dispatch"},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "shadow_run",
+      "type_ref": "metis.ops.ShadowRun@1",
+      "name": "Shadow dispatch evaluation",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"status": "illustrative"},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "control_gate",
+      "type_ref": "metis.ops.ControlGate@1",
+      "name": "Dispatch approval gate",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"status": "advisory"},
+      "confirmation_state": "proposed"
+    },
+    {
+      "id": "operator_surface",
+      "type_ref": "metis.ops.OperatorTrustSurface@1",
+      "name": "Operator explanation surface",
+      "namespace": "metis.demo.public_physical_bess_01",
+      "properties": {"role": "recommendation and constraint explanation"},
+      "confirmation_state": "proposed"
+    }
+  ],
+  "relations": [
+    {"id": "r_bess_containers", "type_ref": "contains", "source_entity_id": "bess", "target_entity_id": "containers"},
+    {"id": "r_containers_modules", "type_ref": "contains", "source_entity_id": "containers", "target_entity_id": "modules"},
+    {"id": "r_bess_pcs", "type_ref": "contains", "source_entity_id": "bess", "target_entity_id": "pcs"},
+    {"id": "r_bess_bms", "type_ref": "controls", "source_entity_id": "bms", "target_entity_id": "bess"},
+    {"id": "r_bess_thermal", "type_ref": "cools", "source_entity_id": "thermal", "target_entity_id": "containers"},
+    {"id": "r_pcs_poi", "type_ref": "connected_to", "source_entity_id": "pcs", "target_entity_id": "intertie"},
+    {"id": "r_bess_market", "type_ref": "settles_at", "source_entity_id": "bess", "target_entity_id": "node"},
+    {"id": "r_weather_thermal", "type_ref": "informs", "source_entity_id": "weather", "target_entity_id": "thermal"},
+    {"id": "r_model_simulates", "type_ref": "simulates", "source_entity_id": "physical_model", "target_entity_id": "bess"},
+    {"id": "r_decision_evaluates", "type_ref": "evaluates", "source_entity_id": "decision_engine", "target_entity_id": "bess"},
+    {"id": "r_shadow_evaluates", "type_ref": "evaluates", "source_entity_id": "shadow_run", "target_entity_id": "decision_engine"},
+    {"id": "r_gate_bms", "type_ref": "gates", "source_entity_id": "control_gate", "target_entity_id": "bms"},
+    {"id": "r_surface_explains", "type_ref": "explains", "source_entity_id": "operator_surface", "target_entity_id": "decision_engine"}
+  ],
+  "variables": [
+    {"id": "soc", "owner_ref": "bess", "name": "state_of_charge", "role": "state", "unit": "MW.h", "temporal_semantics": "end_of_interval_state", "bounds": {"min": 24.0, "max": 240.0}, "resolution": "PT15M", "initialization": {"strategy": "fixed", "value": 120.0}},
+    {"id": "charge_p", "owner_ref": "bess", "name": "charge_power", "role": "control", "unit": "MW", "temporal_semantics": "interval_average", "bounds": {"min": 0.0, "max_from": "property:power_max_mw"}, "resolution": "PT15M"},
+    {"id": "discharge_p", "owner_ref": "bess", "name": "discharge_power", "role": "control", "unit": "MW", "temporal_semantics": "interval_average", "bounds": {"min": 0.0, "max_from": "property:power_max_mw"}, "resolution": "PT15M"},
+    {"id": "price", "owner_ref": "node", "name": "price", "role": "exogenous", "unit": "USD/MW.h", "temporal_semantics": "interval_average", "resolution": "PT15M"},
+    {"id": "ambient_temp", "owner_ref": "weather", "name": "temperature", "role": "exogenous", "unit": "degC", "temporal_semantics": "interval_average", "resolution": "PT15M"},
+    {"id": "measured_soc", "owner_ref": "bess", "name": "measured_state_of_charge", "role": "observed", "unit": "MW.h", "temporal_semantics": "publication_event", "resolution": "PT15M"},
+    {"id": "measured_cell_temp", "owner_ref": "modules", "name": "measured_cell_temperature", "role": "observed", "unit": "degC", "temporal_semantics": "publication_event", "resolution": "PT15M"},
+    {"id": "measured_soh", "owner_ref": "modules", "name": "measured_state_of_health", "role": "observed", "unit": "ratio", "temporal_semantics": "publication_event", "resolution": "PT15M"},
+    {"id": "cell_temp", "owner_ref": "modules", "name": "estimated_cell_temperature", "role": "derived", "unit": "degC", "temporal_semantics": "end_of_interval_state", "resolution": "PT15M"},
+    {"id": "soh", "owner_ref": "modules", "name": "estimated_state_of_health", "role": "derived", "unit": "ratio", "temporal_semantics": "end_of_interval_state", "bounds": {"min": 0.7, "max": 1.0}, "resolution": "PT15M"},
+    {"id": "available_discharge_p", "owner_ref": "bess", "name": "available_discharge_power", "role": "derived", "unit": "MW", "temporal_semantics": "interval_average", "bounds": {"min": 0.0, "max_from": "property:power_max_mw"}, "resolution": "PT15M"},
+    {"id": "health_model_error", "owner_ref": "physical_model", "name": "health_model_error", "role": "outcome", "unit": "ratio", "temporal_semantics": "interval_average", "resolution": "PT15M"},
+    {"id": "expected_margin", "owner_ref": "decision_engine", "name": "expected_dispatch_margin", "role": "outcome", "unit": "USD", "temporal_semantics": "interval_sum", "resolution": "PT15M"}
+  ],
+  "data_bindings": [
+    {
+      "id": "db_price",
+      "variable_id": "price",
+      "source": {"adapter": "fixture", "semantic_view": "fixture:public_physical_bess_price"},
+      "event_time_column": "interval_start_utc",
+      "available_at_column": "published_at_utc",
+      "value_column": "price_usd_per_mwh",
+      "unit": "USD/MW.h",
+      "grain": ["interval_start_utc"],
+      "query_policy": {"as_of_required": true, "latest_before_issue_time": true},
+      "validation": {"expected_resolution": "PT15M", "max_staleness": "PT30M"},
+      "provenance": {"source_kind": "document_excerpt", "note": "Synthetic fixture; not market data."}
+    },
+    {
+      "id": "db_ambient_temp",
+      "variable_id": "ambient_temp",
+      "source": {"adapter": "fixture", "semantic_view": "fixture:public_physical_bess_weather"},
+      "event_time_column": "interval_start_utc",
+      "available_at_column": "published_at_utc",
+      "value_column": "ambient_temperature_c",
+      "unit": "degC",
+      "grain": ["interval_start_utc"],
+      "query_policy": {"as_of_required": true, "latest_before_issue_time": true},
+      "validation": {"expected_resolution": "PT15M", "allowed_min": -30.0, "allowed_max": 55.0},
+      "provenance": {"source_kind": "document_excerpt", "note": "Synthetic fixture; not weather data."}
+    },
+    {
+      "id": "db_measured_soc",
+      "variable_id": "measured_soc",
+      "source": {"adapter": "fixture", "semantic_view": "fixture:public_physical_bess_telemetry"},
+      "event_time_column": "sampled_at_utc",
+      "available_at_column": "received_at_utc",
+      "value_column": "soc_mwh",
+      "unit": "MW.h",
+      "grain": ["sampled_at_utc"],
+      "query_policy": {"as_of_required": true, "latest_before_issue_time": true},
+      "validation": {"expected_resolution": "PT15M", "max_staleness": "PT30M", "allowed_min": 0.0, "allowed_max": 240.0},
+      "provenance": {"source_kind": "document_excerpt", "note": "Synthetic fixture; not BMS telemetry."}
+    },
+    {
+      "id": "db_measured_cell_temp",
+      "variable_id": "measured_cell_temp",
+      "source": {"adapter": "fixture", "semantic_view": "fixture:public_physical_bess_telemetry"},
+      "event_time_column": "sampled_at_utc",
+      "available_at_column": "received_at_utc",
+      "value_column": "cell_temperature_c",
+      "unit": "degC",
+      "grain": ["sampled_at_utc"],
+      "query_policy": {"as_of_required": true, "latest_before_issue_time": true},
+      "validation": {"expected_resolution": "PT15M", "max_staleness": "PT30M", "allowed_min": -20.0, "allowed_max": 80.0},
+      "provenance": {"source_kind": "document_excerpt", "note": "Synthetic fixture; not BMS telemetry."}
+    },
+    {
+      "id": "db_measured_soh",
+      "variable_id": "measured_soh",
+      "source": {"adapter": "fixture", "semantic_view": "fixture:public_physical_bess_telemetry"},
+      "event_time_column": "sampled_at_utc",
+      "available_at_column": "received_at_utc",
+      "value_column": "state_of_health_ratio",
+      "unit": "ratio",
+      "grain": ["sampled_at_utc"],
+      "query_policy": {"as_of_required": true, "latest_before_issue_time": true},
+      "validation": {"expected_resolution": "PT1H", "max_staleness": "PT24H", "allowed_min": 0.0, "allowed_max": 1.0},
+      "provenance": {"source_kind": "document_excerpt", "note": "Synthetic fixture; not BMS telemetry."}
+    }
+  ],
+  "model_bindings": [
+    {
+      "id": "mb_dispatch",
+      "kind": "optimizer",
+      "model_ref": "registry://example.bess.dispatch_optimizer@1.0.0",
+      "scope_ref": "decision_engine",
+      "inputs": {"price": "price", "state_of_charge": "soc", "available_discharge_power": "available_discharge_p"},
+      "outputs": {"charge_power": "charge_p", "discharge_power": "discharge_p"},
+      "parameters": {"power_max_mw": "property:power_max_mw", "energy_max_mwh": "property:energy_max_mwh"},
+      "execution": {"deterministic": true, "interval": "PT15M"}
+    },
+    {
+      "id": "mb_health_fmu",
+      "kind": "fmu",
+      "model_ref": "registry://example.bess.health_thermal_fmu@1.0.0",
+      "scope_ref": "modules",
+      "inputs": {"state_of_charge": "soc", "ambient_temperature": "ambient_temp"},
+      "outputs": {"cell_temperature": "cell_temp", "state_of_health": "soh"},
+      "parameters": {"nominal_energy_mwh": "property:nominal_energy_mwh"},
+      "execution": {"deterministic": true, "interval": "PT15M"}
+    },
+    {
+      "id": "mb_availability",
+      "kind": "calibration_model",
+      "model_ref": "registry://example.bess.available_power@1.0.0",
+      "scope_ref": "physical_model",
+      "inputs": {"state_of_health": "soh", "cell_temperature": "cell_temp"},
+      "outputs": {"available_discharge_power": "available_discharge_p"},
+      "parameters": {"power_max_mw": 120.0},
+      "execution": {"deterministic": true, "interval": "PT15M"}
+    },
+    {
+      "id": "mb_health_calibration",
+      "kind": "calibration_model",
+      "model_ref": "registry://example.bess.health_calibration@1.0.0",
+      "scope_ref": "physical_model",
+      "inputs": {"estimated_state_of_health": "soh", "measured_state_of_health": "measured_soh"},
+      "outputs": {"health_model_error": "health_model_error"},
+      "execution": {"deterministic": true, "interval": "PT1H"}
+    },
+    {
+      "id": "mb_settlement",
+      "kind": "derived_expression",
+      "model_ref": "registry://example.bess.dispatch_value@1.0.0",
+      "scope_ref": "decision_engine",
+      "inputs": {"price": "price", "charge_power": "charge_p", "discharge_power": "discharge_p"},
+      "outputs": {"expected_margin": "expected_margin"},
+      "execution": {"deterministic": true, "interval": "PT15M"}
+    }
+  ],
+  "actions": [
+    {
+      "id": "act_dispatch",
+      "name": "Dispatch power",
+      "controller_entity_id": "bms",
+      "target_entity_id": "bess",
+      "control_variables": ["charge_p", "discharge_p"],
+      "cadence": "PT15M",
+      "bounds": {
+        "charge_power": {"unit": "MW", "min": 0.0, "max_from": "property:power_max_mw"},
+        "discharge_power": {"unit": "MW", "min": 0.0, "max_from": "property:power_max_mw"}
+      },
+      "mutual_exclusion": [["charge_p", "discharge_p"]],
+      "execution_mode": "advisory",
+      "requires_approval": true
+    }
+  ],
+  "constraints": [
+    {"id": "c_soc", "name": "State-of-charge reserve", "class": "hard_physical", "scope_ref": "bess", "expression": {"language": "metis_expr/0.1", "value": "24 <= soc <= 240"}, "enforcement": {"stages": ["simulate", "outcome"]}, "unit": "MW.h", "on_violation": "reject_result"},
+    {"id": "c_cell_temp", "name": "Cell temperature envelope", "class": "hard_physical", "scope_ref": "modules", "expression": {"language": "metis_expr/0.1", "value": "0 <= cell_temp <= 45"}, "enforcement": {"stages": ["simulate", "outcome"]}, "unit": "degC", "on_violation": "reject_result"},
+    {"id": "c_soh", "name": "State-of-health envelope", "class": "hard_physical", "scope_ref": "modules", "expression": {"language": "metis_expr/0.1", "value": "0.7 <= soh <= 1"}, "enforcement": {"stages": ["simulate", "outcome"]}, "unit": "ratio", "on_violation": "mark_uncertified"},
+    {"id": "c_available_power", "name": "Health-aware discharge limit", "class": "hard_physical", "scope_ref": "bess", "expression": {"language": "metis_expr/0.1", "value": "discharge_p <= available_discharge_p"}, "enforcement": {"stages": ["optimize", "simulate", "outcome"]}, "unit": "MW", "on_violation": "reject_result"}
+  ],
+  "objectives": [
+    {
+      "id": "o_risk_aware_dispatch",
+      "name": "Dispatch value subject to physical health",
+      "terms": [
+        {"id": "t_value", "direction": "maximize", "measure_ref": "expected_margin", "weight": 1.0},
+        {"id": "t_health_error", "direction": "minimize", "measure_ref": "health_model_error", "weight": 2.0}
+      ],
+      "aggregation": {"kind": "expected_value"}
+    }
+  ],
+  "validators": [
+    {"id": "v_soc", "name": "SOC bounds", "evaluator_ref": "soc_bounds", "params": {"var": "soc", "lo": 24.0, "hi": 240.0}},
+    {"id": "v_energy", "name": "Energy conservation", "evaluator_ref": "battery_energy_balance", "params": {"tol": 0.000001}},
+    {"id": "v_leak", "name": "Issue-time leakage safety", "evaluator_ref": "issue_time_leakage", "params": {}},
+    {"id": "v_health", "name": "Health model calibration", "evaluator_ref": "model_prediction_error", "params": {"estimated": "soh", "measured": "measured_soh"}},
+    {"id": "v_gate", "name": "Advisory dispatch gate", "evaluator_ref": "control_readiness", "params": {"action": "act_dispatch", "requires_approval": true}}
+  ],
+  "evidence": [
+    {"id": "ev_synthetic", "kind": "document_excerpt", "source_ref": "examples/public_physical_bess_01.twingraph.json", "claim": "This is a synthetic public BESS showcase for exercising physical topology, data-quality controls, model contracts, health-aware dispatch, and operator review.", "confidence": 1.0}
+  ],
+  "extensions": {}
+}
