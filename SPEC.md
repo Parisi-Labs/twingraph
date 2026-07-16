@@ -147,8 +147,9 @@ in one pass); raises ONLY on misuse (null registry). Eleven stages:
     labelled requirements (entity types / variable roles / binding kinds /
     objective shape / constraint classes), so a non-battery twin reports its own
     profiles' compatibility, not a hardcoded battery check.
-11. **emit** — `CompileReport` + `ExecutablePlan` (data-only; carries
-    `callable_key` strings, resolved at run by `ModelRegistry.resolve`).
+11. **emit** — `CompileReport` + versioned `ExecutablePlan` (data-only; carries
+    explicit `dependency_order` plus `callable_key` strings, resolved at run by
+    a `CallableResolver`).
 
 `CompileResult.ok` is true iff there are no error-severity diagnostics; `plan`
 is `None` iff not ok. **No decision run may target a version lacking a
@@ -199,13 +200,41 @@ profiles (solar, PdM, …) into their own registry instance, and a non-battery
 twin is measured against ITS profiles, not a hardcoded battery check. A profile
 is reported, never an error.
 
-## 7. Model registry
+## 7. Model catalog and runtime resolution
 
 `ModelSpec{model_ref, kind, io_contract, callable_key}` resolved by a
-`ModelRegistry` protocol. Compile uses `get()` to type-check; the executor uses
-`resolve(callable_key)` (app-side only) to obtain the callable. `twingraph`
-ships the protocol and the `IOContract`/`ModelSpec` dataclasses — never an
+`ModelCatalog` protocol. Compile uses only `get()` / `has()` to type-check and
+never requires executable code. An application runtime may independently use a
+`CallableResolver` to obtain an implementation for a compiled `callable_key`.
+The combined `ModelRegistry` protocol remains a compatibility convenience for
+applications that intentionally own both responsibilities. `twingraph` ships
+the protocols and the `IOContract`/`ModelSpec` dataclasses — never an
 implementation.
+
+### Runtime boundary
+
+`ExecutablePlan` is independently versioned as `twingraph-plan/0.1`, records the
+compiler version, and carries its dependency order explicitly rather than
+requiring a runtime to infer ordering from list position. `to_wire()` emits a
+JSON-compatible envelope and `from_wire()` validates it on receipt.
+
+A native component resolved by `callable_key` follows the `ComponentCallable`
+contract:
+
+```python
+component(*, inputs, params, context) -> outputs
+```
+
+Input and output mappings are keyed by the binding's declared ports. The frozen
+`ExecutionContext` carries trusted run identity and `issue_time`; a component
+must not derive the issue-time cutoff from its input payload.
+
+An application-owned runtime returns the versioned, JSON-compatible
+`ExecutionResult` envelope. It records plan/compiler identity, graph/version/
+content hash, execution and issue times, model versions, outputs, diagnostics,
+and references to externally stored input/output artifacts. Containers,
+resource requests, retry policy, scheduling, and other deployment concerns are
+runtime policy and are not part of TwinGraph semantics.
 
 ## 8. Semantic patch (§9.15) — FORMAT only, no agents
 

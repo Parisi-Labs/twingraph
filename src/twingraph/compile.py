@@ -14,9 +14,9 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .canonical import hash_input
 from .document import TwinGraph
@@ -24,10 +24,11 @@ from .errors import CODES, Diagnostic, UnknownModelRefError, UnknownTypeRefError
 from .metis_expr import ExpressionParseError, extract_references
 from .primitives import EXECUTABLE_MODEL_KINDS, FOREIGN_MODEL_KINDS
 from .programs import BUILTIN_PROGRAM_REGISTRY, ProgramRegistry
-from .registry import ModelRegistry, TypeRegistry
+from .registry import ModelCatalog, TypeRegistry
 from .units import DEFAULT_UNIT_REGISTRY, UnitRegistry
 
 COMPILER_VERSION = "twingraph-compile/0.1.0"
+PLAN_SCHEMA_VERSION = "twingraph-plan/0.1"
 
 
 # ---------------------------------------------------------------------------
@@ -111,9 +112,12 @@ class ExecutablePlan(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    plan_schema_version: Literal["twingraph-plan/0.1"] = PLAN_SCHEMA_VERSION
+    compiler_version: str = COMPILER_VERSION
     graph_id: str
     version_id: str
     content_hash: str
+    dependency_order: list[str] = Field(default_factory=list)
     horizon_resolution: str | None = None
     components: list[ResolvedComponent] = Field(default_factory=list)
     variables: dict[str, dict[str, Any]] = Field(default_factory=dict)
@@ -123,6 +127,24 @@ class ExecutablePlan(BaseModel):
     query_plan: list[QueryPlan] = Field(default_factory=list)
     validators: list[dict[str, Any]] = Field(default_factory=list)
     program_compatibility: list[ProgramCompatibilityReport] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_dependency_order(self) -> Self:
+        component_order = [component.model_binding_id for component in self.components]
+        if self.dependency_order != component_order:
+            raise ValueError(
+                "dependency_order must match the ordered component model_binding_ids"
+            )
+        return self
+
+    def to_wire(self) -> dict[str, Any]:
+        """Return the stable, JSON-compatible plan envelope for a runtime boundary."""
+        return self.model_dump(mode="json", by_alias=True, exclude_none=True)
+
+    @classmethod
+    def from_wire(cls, payload: dict[str, Any]) -> ExecutablePlan:
+        """Validate and reconstruct a plan received across a runtime boundary."""
+        return cls.model_validate(payload)
 
 
 class CompileReport(BaseModel):
@@ -210,7 +232,7 @@ def compile_graph(
     graph: TwinGraph,
     *,
     type_registry: TypeRegistry,
-    model_registry: ModelRegistry,
+    model_registry: ModelCatalog,
     program_registry: ProgramRegistry | None = None,
     unit_registry: UnitRegistry | None = None,
     validator_registry: Any | None = None,
@@ -883,7 +905,7 @@ def _validate_entity_port_units(ctx: _Ctx, entity, units: UnitRegistry) -> None:
 
 
 # --- stage 6 ---------------------------------------------------------------
-def _stage_resolve_models(ctx: _Ctx, models: ModelRegistry, units: UnitRegistry) -> None:
+def _stage_resolve_models(ctx: _Ctx, models: ModelCatalog, units: UnitRegistry) -> None:
     for m in ctx.graph.model_bindings:
         try:
             spec = models.get(m.model_ref)
@@ -1360,6 +1382,7 @@ def _build_plan(
         graph_id=graph.graph_id,
         version_id=graph.version_id,
         content_hash=ctx_content_hash(graph),
+        dependency_order=order,
         horizon_resolution=_infer_horizon_resolution(graph),
         components=components,
         variables=variables,

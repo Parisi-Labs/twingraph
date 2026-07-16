@@ -1,5 +1,7 @@
+import pytest
 import twingraph as tg
 from helpers import mutate
+from pydantic import ValidationError
 from twingraph.errors import CODES
 
 
@@ -21,6 +23,26 @@ def test_ny_demo_validates_and_compiles(demo_doc, model_registry):
     assert res.plan is not None
     assert res.report.graph_content_hash.startswith("sha256:")
     assert res.report.unit_table_version
+    assert res.plan.plan_schema_version == tg.PLAN_SCHEMA_VERSION
+    assert res.plan.compiler_version == tg.COMPILER_VERSION
+    assert res.plan.dependency_order == res.report.dependency_order
+
+
+def test_plan_wire_round_trip(demo_doc, model_registry):
+    res = _compile(demo_doc, model_registry)
+    payload = res.plan.to_wire()
+
+    assert payload["plan_schema_version"] == tg.PLAN_SCHEMA_VERSION
+    assert tg.ExecutablePlan.from_wire(payload) == res.plan
+
+    payload["plan_schema_version"] = "twingraph-plan/99"
+    with pytest.raises(ValidationError):
+        tg.ExecutablePlan.from_wire(payload)
+
+    payload = res.plan.to_wire()
+    payload["dependency_order"] = []
+    with pytest.raises(ValidationError, match="dependency_order must match"):
+        tg.ExecutablePlan.from_wire(payload)
 
 
 def test_plan_carries_resolved_battery_properties(demo_doc, model_registry):
@@ -72,6 +94,28 @@ def test_dependency_order_is_not_drawing_order(demo_doc, model_registry):
     # mb_explain reads soc (written by mb_battery) -> battery comes first,
     # even though mb_explain is drawn first in the document.
     assert order.index("mb_battery") < order.index("mb_explain")
+    assert res.plan.dependency_order == order
+
+
+def test_compile_accepts_metadata_only_model_catalog(demo_doc, model_registry):
+    class CompileOnlyCatalog:
+        def get(self, model_ref):
+            return model_registry.get(model_ref)
+
+        def has(self, model_ref):
+            return model_registry.has(model_ref)
+
+    catalog = CompileOnlyCatalog()
+    assert isinstance(catalog, tg.ModelCatalog)
+    assert not isinstance(catalog, tg.ModelRegistry)
+
+    graph = tg.TwinGraph.load(demo_doc)
+    res = tg.compile_graph(
+        graph,
+        type_registry=tg.BUILTIN_TYPE_REGISTRY,
+        model_registry=catalog,
+    )
+    assert res.ok, res.report.errors()
 
 
 # --- negative fixtures -----------------------------------------------------

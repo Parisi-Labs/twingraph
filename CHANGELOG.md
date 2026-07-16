@@ -8,12 +8,21 @@ semantic versioning.
 
 ### Added
 
+- Runtime-neutral execution contracts now define a trusted `ExecutionContext`,
+  native `ComponentCallable` invocation shape, external `ArtifactRef`s, and a
+  versioned, JSON-compatible `ExecutionResult` envelope.
+- `ExecutablePlan` now carries an explicit plan schema version, compiler
+  version, and dependency order, with validated `to_wire()` / `from_wire()`
+  helpers for runtime boundaries.
 - Compiled query plans now retain adapter, lookback, freshness, and allowed
   value-range metadata; executable plans retain variable data type, resolution,
   initialization, uncertainty, and program requirements.
 
 ### Changed
 
+- Compile-time model metadata now uses the narrower `ModelCatalog` protocol;
+  executable lookup is isolated behind `CallableResolver`, while the combined
+  `ModelRegistry` protocol remains available for compatibility.
 - `ModelSpec.io_contract` names now constrain native bindings as well as FMI /
   Modelica references. Declared input/output ports are required by default,
   optional ports use `required: false`, and parameter declarations reject
