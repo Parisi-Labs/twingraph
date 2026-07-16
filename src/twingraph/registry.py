@@ -3,22 +3,27 @@
 The IR *references* types and models by id; the application *registers*
 implementations. ``twingraph`` ships:
 
-  * the ``TypeRegistry`` / ``ModelRegistry`` Protocols,
+  * the ``TypeRegistry`` / ``ModelCatalog`` / ``CallableResolver`` Protocols,
   * the metadata dataclasses (TypeDef/PropSpec/VarSpec/ActionSpec, IOContract/
     ModelSpec),
   * an ``InMemoryTypeRegistry`` and a ``BUILTIN_TYPE_REGISTRY`` seeded with the
     open energy P0 vocabulary the demo needs.
 
 It NEVER ships model implementations or imports application runtime code. The
-application provides the executable components and a concrete ``ModelRegistry``.
-stdlib + pydantic only.
+application provides model metadata through a ``ModelCatalog``. A runtime may
+independently provide executable components through a ``CallableResolver``.
+``ModelRegistry`` remains as the combined compatibility protocol. stdlib +
+pydantic only.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from .execution import PythonComponentCallable
 
 from .errors import UnknownTypeRefError
 
@@ -139,10 +144,24 @@ class ModelSpec:
 
 
 @runtime_checkable
-class ModelRegistry(Protocol):
+class ModelCatalog(Protocol):
+    """Compile-time model metadata, with no executable-code requirement."""
+
     def get(self, model_ref: str) -> ModelSpec: ...
     def has(self, model_ref: str) -> bool: ...
-    def resolve(self, callable_key: str) -> Callable[..., Any]: ...
+
+
+@runtime_checkable
+class CallableResolver(Protocol):
+    """Runtime lookup from a plan's stable callable key to an implementation."""
+
+    def resolve(self, callable_key: str) -> PythonComponentCallable: ...
+
+
+@runtime_checkable
+class ModelRegistry(ModelCatalog, CallableResolver, Protocol):
+    """Backward-compatible combined metadata and runtime registry protocol."""
+
     def register(
         self, model_ref: str, callable_key: str, factory: Callable[..., Any]
     ) -> None: ...
@@ -802,8 +821,10 @@ __all__ = [
     "POWER_TYPE_PACK",
     "RELATION_TYPE_PACK",
     "ActionSpec",
+    "CallableResolver",
     "IOContract",
     "InMemoryTypeRegistry",
+    "ModelCatalog",
     "ModelRegistry",
     "ModelSpec",
     "PropSpec",

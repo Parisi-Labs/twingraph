@@ -69,7 +69,7 @@ from twingraph.registry import IOContract, ModelSpec
 from twingraph.errors import UnknownModelRefError
 
 
-class DemoModelRegistry:
+class DemoModelCatalog:
     def __init__(self):
         self._models = {
             "registry://metis.components.battery_linear@1.0.0": ModelSpec(
@@ -92,17 +92,13 @@ class DemoModelRegistry:
     def has(self, model_ref: str) -> bool:
         return model_ref in self._models
 
-    def resolve(self, callable_key: str):
-        raise NotImplementedError("execution is application-owned")
-
-
 doc = json.loads(Path("examples/ny_demo_bess_01.twingraph.json").read_text())
 graph = tg.TwinGraph.load(doc)
 
 result = tg.compile_graph(
     graph,
     type_registry=tg.BUILTIN_TYPE_REGISTRY,
-    model_registry=DemoModelRegistry(),
+    model_registry=DemoModelCatalog(),
 )
 
 assert result.ok, result.report.errors()
@@ -148,6 +144,35 @@ Model references look like `registry://metis.components.battery_linear@1.0.0`.
 The `metis.*` built-in namespace is just the default vocabulary shipped with the
 package. You can register your own type packs and model refs without importing
 any application code into `twingraph`.
+
+## Runtime Contract
+
+TwinGraph does not execute an `ExecutablePlan`, but it defines versioned,
+runtime-neutral JSON plan, context, and result contracts for runtimes that do:
+
+- `ModelCatalog` supplies compile-time `ModelSpec` metadata without requiring
+  executable code.
+- `CallableResolver` resolves a compiled `callable_key` inside an
+  application-owned runtime. The combined `ModelRegistry` protocol remains for
+  applications that intentionally provide both capabilities.
+- `PythonComponentCallable` is an optional synchronous, in-process Python ABI
+  with keyword-only `inputs`, `params`, and `ExecutionContext`. It is not the
+  portable boundary; containers, RPC services, queues, and foreign runtimes use
+  the JSON contracts.
+- `ExecutionResult` records exact `plan_hash` identity, issue time, runtime and
+  implementation versions, external artifact references, JSON-compatible
+  outputs, and diagnostics.
+
+Plans and results expose `to_wire()` / `from_wire()` methods. Plan wire fields
+are JSON-constrained, `dependency_order` is the authoritative component order,
+and every plan carries a canonical hash that its result must repeat. Independent
+schema versions let a runtime reject unsupported formats before execution.
+Large datasets and binary outputs should remain in application-owned storage
+and travel as `ArtifactRef` values.
+
+Deployment policy—containers, resource requests, retries, queues, and
+scheduling—is intentionally not graph semantics and remains outside this
+package.
 
 ## Built-In Type Packs
 

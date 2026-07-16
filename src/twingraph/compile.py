@@ -14,38 +14,40 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
+from .canonical import content_hash as canonical_content_hash
 from .canonical import hash_input
 from .document import TwinGraph
 from .errors import CODES, Diagnostic, UnknownModelRefError, UnknownTypeRefError
 from .metis_expr import ExpressionParseError, extract_references
 from .primitives import EXECUTABLE_MODEL_KINDS, FOREIGN_MODEL_KINDS
 from .programs import BUILTIN_PROGRAM_REGISTRY, ProgramRegistry
-from .registry import ModelRegistry, TypeRegistry
+from .registry import ModelCatalog, TypeRegistry
 from .units import DEFAULT_UNIT_REGISTRY, UnitRegistry
 
 COMPILER_VERSION = "twingraph-compile/0.1.0"
+PLAN_SCHEMA_VERSION = "twingraph-plan/0.1"
 
 
 # ---------------------------------------------------------------------------
 # Output artifacts
 # ---------------------------------------------------------------------------
 class QueryPlan(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     data_binding_id: str
     variable_id: str
     adapter: str
     semantic_view: str
-    filters: dict[str, Any] = Field(default_factory=dict)
+    filters: dict[str, JsonValue] = Field(default_factory=dict)
     value_column: str
     event_time_column: str
     available_at_column: str | None = None
     unit: str
-    unit_transform: dict[str, Any] | None = None
+    unit_transform: dict[str, JsonValue] | None = None
     as_of_required: bool = True
     deduplication: str = "latest_available_at"
     latest_before_issue_time: bool | None = None
@@ -60,7 +62,7 @@ class QueryPlan(BaseModel):
 
 
 class ResolvedComponent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     model_binding_id: str
     kind: str
@@ -68,7 +70,7 @@ class ResolvedComponent(BaseModel):
     callable_key: str
     inputs: dict[str, str] = Field(default_factory=dict)
     outputs: dict[str, str] = Field(default_factory=dict)
-    params: dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, JsonValue] = Field(default_factory=dict)
     # §31.3: a foreign-reference component (fmu/modelica_class) is validated and
     # retained but NOT natively executed by twingraph — an external runtime (FMI/
     # Modelica) dispatches it. The flag, not the topo position, signals this.
@@ -76,26 +78,26 @@ class ResolvedComponent(BaseModel):
 
 
 class CompiledConstraint(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     constraint_id: str
     class_: str = Field(alias="class")
     mode: str  # "expression" | "evaluator"
     expression: str | None = None
     pattern_ref: str | None = None
-    params: dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, JsonValue] = Field(default_factory=dict)
     unit: str | None = None
     tolerance: float = 0.0
     stages: list[str] = Field(default_factory=list)
 
 
 class ResolvedObjective(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     objective_id: str
     name: str
-    terms: list[dict[str, Any]] = Field(default_factory=list)
-    aggregation: dict[str, Any] = Field(default_factory=dict)
+    terms: list[dict[str, JsonValue]] = Field(default_factory=list)
+    aggregation: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class ProgramCompatibilityReport(BaseModel):
@@ -109,20 +111,60 @@ class ProgramCompatibilityReport(BaseModel):
 class ExecutablePlan(BaseModel):
     """Data-only, serializable execution plan consumed by the runtime."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
+    plan_schema_version: Literal["twingraph-plan/0.1"] = PLAN_SCHEMA_VERSION
+    compiler_version: str = COMPILER_VERSION
     graph_id: str
     version_id: str
     content_hash: str
+    plan_hash: str = ""
+    dependency_order: list[str] = Field(default_factory=list)
     horizon_resolution: str | None = None
     components: list[ResolvedComponent] = Field(default_factory=list)
-    variables: dict[str, dict[str, Any]] = Field(default_factory=dict)
-    actions: list[dict[str, Any]] = Field(default_factory=list)
+    variables: dict[str, dict[str, JsonValue]] = Field(default_factory=dict)
+    actions: list[dict[str, JsonValue]] = Field(default_factory=list)
     constraints: list[CompiledConstraint] = Field(default_factory=list)
     objective: ResolvedObjective | None = None
     query_plan: list[QueryPlan] = Field(default_factory=list)
-    validators: list[dict[str, Any]] = Field(default_factory=list)
+    validators: list[dict[str, JsonValue]] = Field(default_factory=list)
     program_compatibility: list[ProgramCompatibilityReport] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_wire_contract(self) -> Self:
+        component_ids = [component.model_binding_id for component in self.components]
+        if len(component_ids) != len(set(component_ids)):
+            raise ValueError("component model_binding_ids must be unique")
+        if len(self.dependency_order) != len(set(self.dependency_order)):
+            raise ValueError("dependency_order must not contain duplicates")
+        if set(self.dependency_order) != set(component_ids):
+            raise ValueError("dependency_order must contain every component id exactly once")
+
+        expected_hash = self.compute_plan_hash()
+        if self.plan_hash and self.plan_hash != expected_hash:
+            raise ValueError("plan_hash does not match the canonical plan payload")
+        self.plan_hash = expected_hash
+        return self
+
+    def compute_plan_hash(self) -> str:
+        """Hash the exact JSON plan envelope, excluding ``plan_hash`` itself."""
+        payload = self.model_dump(
+            mode="json", by_alias=True, exclude_none=True, exclude={"plan_hash"}
+        )
+        return canonical_content_hash(payload)
+
+    def to_wire(self) -> dict[str, Any]:
+        """Return the stable, JSON-compatible plan envelope for a runtime boundary."""
+        if self.plan_hash != self.compute_plan_hash():
+            raise ValueError("plan_hash is stale for the current plan payload")
+        return self.model_dump(mode="json", by_alias=True, exclude_none=True)
+
+    @classmethod
+    def from_wire(cls, payload: dict[str, Any]) -> ExecutablePlan:
+        """Validate and reconstruct a plan received across a runtime boundary."""
+        if not payload.get("plan_hash"):
+            raise ValueError("plan_hash is required in a plan wire envelope")
+        return cls.model_validate(payload)
 
 
 class CompileReport(BaseModel):
@@ -210,7 +252,7 @@ def compile_graph(
     graph: TwinGraph,
     *,
     type_registry: TypeRegistry,
-    model_registry: ModelRegistry,
+    model_registry: ModelCatalog,
     program_registry: ProgramRegistry | None = None,
     unit_registry: UnitRegistry | None = None,
     validator_registry: Any | None = None,
@@ -883,7 +925,7 @@ def _validate_entity_port_units(ctx: _Ctx, entity, units: UnitRegistry) -> None:
 
 
 # --- stage 6 ---------------------------------------------------------------
-def _stage_resolve_models(ctx: _Ctx, models: ModelRegistry, units: UnitRegistry) -> None:
+def _stage_resolve_models(ctx: _Ctx, models: ModelCatalog, units: UnitRegistry) -> None:
     for m in ctx.graph.model_bindings:
         try:
             spec = models.get(m.model_ref)
@@ -1360,6 +1402,7 @@ def _build_plan(
         graph_id=graph.graph_id,
         version_id=graph.version_id,
         content_hash=ctx_content_hash(graph),
+        dependency_order=order,
         horizon_resolution=_infer_horizon_resolution(graph),
         components=components,
         variables=variables,

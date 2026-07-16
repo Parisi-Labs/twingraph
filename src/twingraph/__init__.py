@@ -14,6 +14,7 @@ from .canonical import (
 )
 from .compile import (
     COMPILER_VERSION,
+    PLAN_SCHEMA_VERSION,
     CompiledConstraint,
     CompileReport,
     CompileResult,
@@ -37,6 +38,13 @@ from .errors import (
     TwinGraphError,
     UnknownModelRefError,
     UnknownTypeRefError,
+)
+from .execution import (
+    EXECUTION_RESULT_SCHEMA_VERSION,
+    ArtifactRef,
+    ExecutionContext,
+    ExecutionResult,
+    PythonComponentCallable,
 )
 from .fmi import (
     FmiVariable,
@@ -100,8 +108,10 @@ from .registry import (
     POWER_TYPE_PACK,
     RELATION_TYPE_PACK,
     ActionSpec,
+    CallableResolver,
     InMemoryTypeRegistry,
     IOContract,
+    ModelCatalog,
     ModelRegistry,
     ModelSpec,
     PropSpec,
@@ -134,9 +144,11 @@ __all__ = [
     "DATA_TYPE_PACK",
     "DEFAULT_UNIT_REGISTRY",
     "EXECUTABLE_MODEL_KINDS",
+    "EXECUTION_RESULT_SCHEMA_VERSION",
     "FOREIGN_MODEL_KINDS",
     "HASH_EXCLUDED_FIELDS",
     "OPERATIONS_TYPE_PACK",
+    "PLAN_SCHEMA_VERSION",
     "PLATFORM_ANALYSIS_TYPE_PACK",
     "POWER_TYPE_PACK",
     "RELATION_TYPE_PACK",
@@ -146,6 +158,8 @@ __all__ = [
     "Action",
     "ActionBound",
     "ActionSpec",
+    "ArtifactRef",
+    "CallableResolver",
     "CompileReport",
     "CompileResult",
     "CompiledConstraint",
@@ -163,6 +177,8 @@ __all__ = [
     "EntityPort",
     "Evidence",
     "ExecutablePlan",
+    "ExecutionContext",
+    "ExecutionResult",
     # fmi
     "FmiParseError",
     "FmiVariable",
@@ -175,6 +191,7 @@ __all__ = [
     "LifecycleState",
     "ModelBinding",
     "ModelBindingKind",
+    "ModelCatalog",
     "ModelRegistry",
     "ModelSpec",
     "Objective",
@@ -192,6 +209,7 @@ __all__ = [
     "ProgramRegistry",
     "PropSpec",
     "Provenance",
+    "PythonComponentCallable",
     "Quantity",
     "QueryPlan",
     "Relation",
