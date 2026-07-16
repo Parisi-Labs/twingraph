@@ -214,25 +214,34 @@ implementation.
 ### Runtime boundary
 
 `ExecutablePlan` is independently versioned as `twingraph-plan/0.1`, records the
-compiler version, and carries its dependency order explicitly rather than
-requiring a runtime to infer ordering from list position. `to_wire()` emits a
-JSON-compatible envelope and `from_wire()` validates it on receipt.
+compiler version, constrains every wire-facing value to JSON, and carries its
+dependency order explicitly. `dependency_order` is authoritative; component
+storage order is not execution order. Every plan has a canonical `plan_hash`
+computed over its JSON envelope excluding the hash field itself. `to_wire()`
+emits the checked envelope and `from_wire()` validates its schema, order, and
+hash on receipt.
 
-A native component resolved by `callable_key` follows the `ComponentCallable`
-contract:
+A synchronous in-process Python component resolved by `callable_key` may follow
+the optional `PythonComponentCallable` ABI:
 
 ```python
 component(*, inputs, params, context) -> outputs
 ```
 
-Input and output mappings are keyed by the binding's declared ports. The frozen
-`ExecutionContext` carries trusted run identity and `issue_time`; a component
-must not derive the issue-time cutoff from its input payload.
+Input and output mappings are keyed by the binding's declared ports. This Python
+`Protocol` is not the portable runtime boundary and is not runtime-checkable;
+static checking and real invocation enforce its signature. Containers, RPC,
+queues, asynchronous servers, and foreign runtimes consume the plan, context,
+and result JSON contracts. `ExecutionContext` carries trusted run identity and
+`issue_time`; a component must not derive the cutoff from its input payload.
+Its fields are frozen against reassignment, although nested metadata containers
+remain ordinary runtime-owned JSON values.
 
 An application-owned runtime returns the versioned, JSON-compatible
-`ExecutionResult` envelope. It records plan/compiler identity, graph/version/
-content hash, execution and issue times, model versions, outputs, diagnostics,
-and references to externally stored input/output artifacts. Containers,
+`ExecutionResult` envelope. It repeats the exact `plan_hash` and records
+plan/compiler identity, graph/version/content hash, execution and issue times,
+runtime and binding-keyed implementation versions, outputs, diagnostics, and
+references to externally stored input/output artifacts. Containers,
 resource requests, retry policy, scheduling, and other deployment concerns are
 runtime policy and are not part of TwinGraph semantics.
 

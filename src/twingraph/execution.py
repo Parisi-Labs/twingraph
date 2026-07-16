@@ -8,7 +8,7 @@ trusted run context, artifact references, and auditable result envelopes.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Literal, Protocol, Self, runtime_checkable
+from typing import Any, Literal, Protocol, Self
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, model_validator
 
@@ -21,7 +21,7 @@ EXECUTION_RESULT_SCHEMA_VERSION = "twingraph-execution-result/0.1"
 class ArtifactRef(BaseModel):
     """Reference to an input or output artifact kept outside the result envelope."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     uri: str
     media_type: str | None = None
@@ -29,9 +29,14 @@ class ArtifactRef(BaseModel):
 
 
 class ExecutionContext(BaseModel):
-    """Trusted, run-level context supplied to every native component callable."""
+    """Trusted run context supplied by the runtime.
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    The model prevents field reassignment, but nested JSON containers such as
+    ``metadata`` remain mutable. Runtimes should treat them as owned inputs, not
+    as cryptographically immutable values.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
 
     execution_id: str
     graph_id: str
@@ -42,13 +47,13 @@ class ExecutionContext(BaseModel):
     metadata: dict[str, JsonValue] = Field(default_factory=dict)
 
 
-@runtime_checkable
-class ComponentCallable(Protocol):
-    """Invocation contract for a natively executable resolved component.
+class PythonComponentCallable(Protocol):
+    """Optional synchronous in-process Python component ABI.
 
-    Runtimes call components with keyword arguments. ``inputs`` is keyed by the
-    component's declared input ports, ``params`` contains its compiled parameter
-    values, and the return mapping is keyed by declared output ports.
+    This protocol is intentionally not the portable runtime boundary and is not
+    runtime-checkable. Static type checking and actual invocation enforce its
+    keyword signature. Containers, RPC services, queues, foreign runtimes, and
+    asynchronous servers consume the plan/context/result wire contracts instead.
     """
 
     def __call__(
@@ -63,13 +68,14 @@ class ComponentCallable(Protocol):
 class ExecutionResult(BaseModel):
     """Portable, auditable envelope emitted by an application-owned runtime."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     result_schema_version: Literal["twingraph-execution-result/0.1"] = (
         EXECUTION_RESULT_SCHEMA_VERSION
     )
     plan_schema_version: Literal["twingraph-plan/0.1"] = PLAN_SCHEMA_VERSION
     compiler_version: str
+    plan_hash: str = Field(pattern=r"^sha256:[0-9a-f]{64}$")
     execution_id: str
     graph_id: str
     version_id: str
@@ -79,7 +85,11 @@ class ExecutionResult(BaseModel):
     finished_at: AwareDatetime
     status: Literal["succeeded", "failed"]
     outputs: dict[str, JsonValue] = Field(default_factory=dict)
-    model_versions: dict[str, str] = Field(default_factory=dict)
+    runtime_version: str | None = None
+    implementation_versions: dict[str, str] = Field(
+        default_factory=dict,
+        description="Implementation version keyed by model_binding_id",
+    )
     input_artifacts: list[ArtifactRef] = Field(default_factory=list)
     output_artifacts: list[ArtifactRef] = Field(default_factory=list)
     diagnostics: list[Diagnostic] = Field(default_factory=list)
@@ -108,7 +118,7 @@ class ExecutionResult(BaseModel):
 __all__ = [
     "EXECUTION_RESULT_SCHEMA_VERSION",
     "ArtifactRef",
-    "ComponentCallable",
     "ExecutionContext",
     "ExecutionResult",
+    "PythonComponentCallable",
 ]

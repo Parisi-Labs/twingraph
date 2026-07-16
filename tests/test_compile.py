@@ -26,6 +26,8 @@ def test_ny_demo_validates_and_compiles(demo_doc, model_registry):
     assert res.plan.plan_schema_version == tg.PLAN_SCHEMA_VERSION
     assert res.plan.compiler_version == tg.COMPILER_VERSION
     assert res.plan.dependency_order == res.report.dependency_order
+    assert res.plan.plan_hash == res.plan.compute_plan_hash()
+    assert res.plan.plan_hash.startswith("sha256:")
 
 
 def test_plan_wire_round_trip(demo_doc, model_registry):
@@ -41,7 +43,17 @@ def test_plan_wire_round_trip(demo_doc, model_registry):
 
     payload = res.plan.to_wire()
     payload["dependency_order"] = []
-    with pytest.raises(ValidationError, match="dependency_order must match"):
+    with pytest.raises(ValidationError, match="dependency_order must contain"):
+        tg.ExecutablePlan.from_wire(payload)
+
+    payload = res.plan.to_wire()
+    payload["compiler_version"] = "tampered"
+    with pytest.raises(ValidationError, match="plan_hash does not match"):
+        tg.ExecutablePlan.from_wire(payload)
+
+    payload = res.plan.to_wire()
+    payload.pop("plan_hash")
+    with pytest.raises(ValueError, match="plan_hash is required"):
         tg.ExecutablePlan.from_wire(payload)
 
 
@@ -95,6 +107,106 @@ def test_dependency_order_is_not_drawing_order(demo_doc, model_registry):
     # even though mb_explain is drawn first in the document.
     assert order.index("mb_battery") < order.index("mb_explain")
     assert res.plan.dependency_order == order
+
+    # Component storage order is independent; dependency_order is authoritative.
+    reordered = tg.ExecutablePlan(
+        **{
+            **res.plan.model_dump(
+                by_alias=True, exclude={"components", "plan_hash"}
+            ),
+            "components": list(reversed(res.plan.components)),
+        }
+    )
+    assert reordered.dependency_order == order
+    assert [c.model_binding_id for c in reordered.components] != order
+
+
+def test_dependency_order_rejects_duplicates_and_unknown_ids():
+    component = tg.ResolvedComponent(
+        model_binding_id="mb_one",
+        kind="native_component",
+        model_ref="registry://example.component@1.0.0",
+        callable_key="component",
+    )
+    base = {
+        "graph_id": "graph-01",
+        "version_id": "version-01",
+        "content_hash": "sha256:graph",
+        "components": [component],
+    }
+
+    with pytest.raises(ValidationError, match="must not contain duplicates"):
+        tg.ExecutablePlan(**base, dependency_order=["mb_one", "mb_one"])
+    with pytest.raises(ValidationError, match="must contain every component"):
+        tg.ExecutablePlan(**base, dependency_order=["mb_unknown"])
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("variables", {"v": {"bad": object()}}),
+        ("actions", [{"bad": object()}]),
+        ("validators", [{"bad": object()}]),
+        (
+            "components",
+            [
+                {
+                    "model_binding_id": "mb_one",
+                    "kind": "native_component",
+                    "model_ref": "registry://example.component@1.0.0",
+                    "callable_key": "component",
+                    "params": {"bad": object()},
+                }
+            ],
+        ),
+        (
+            "constraints",
+            [
+                {
+                    "constraint_id": "c_one",
+                    "class": "hard",
+                    "mode": "evaluator",
+                    "params": {"bad": object()},
+                }
+            ],
+        ),
+        (
+            "objective",
+            {
+                "objective_id": "o_one",
+                "name": "objective",
+                "terms": [{"bad": object()}],
+            },
+        ),
+        (
+            "query_plan",
+            [
+                {
+                    "data_binding_id": "db_one",
+                    "variable_id": "v_one",
+                    "adapter": "warehouse",
+                    "semantic_view": "table",
+                    "filters": {"bad": object()},
+                    "value_column": "value",
+                    "event_time_column": "event_time",
+                    "unit": "MW",
+                }
+            ],
+        ),
+    ],
+)
+def test_plan_rejects_non_json_wire_values(field, value):
+    kwargs = {
+        "graph_id": "graph-01",
+        "version_id": "version-01",
+        "content_hash": "sha256:graph",
+        field: value,
+    }
+    if field == "components":
+        kwargs["dependency_order"] = ["mb_one"]
+
+    with pytest.raises(ValidationError):
+        tg.ExecutablePlan(**kwargs)
 
 
 def test_compile_accepts_metadata_only_model_catalog(demo_doc, model_registry):

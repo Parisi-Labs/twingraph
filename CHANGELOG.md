@@ -9,11 +9,13 @@ semantic versioning.
 ### Added
 
 - Runtime-neutral execution contracts now define a trusted `ExecutionContext`,
-  native `ComponentCallable` invocation shape, external `ArtifactRef`s, and a
-  versioned, JSON-compatible `ExecutionResult` envelope.
+  external `ArtifactRef`s, and a versioned, JSON-compatible `ExecutionResult`
+  envelope; an optional `PythonComponentCallable` protocol separately describes
+  the synchronous in-process Python ABI.
 - `ExecutablePlan` now carries an explicit plan schema version, compiler
-  version, and dependency order, with validated `to_wire()` / `from_wire()`
-  helpers for runtime boundaries.
+  version, authoritative dependency order, canonical `plan_hash`, and strictly
+  JSON-constrained values, with validated `to_wire()` / `from_wire()` helpers
+  for runtime boundaries and a checked-in golden contract fixture.
 - Compiled query plans now retain adapter, lookback, freshness, and allowed
   value-range metadata; executable plans retain variable data type, resolution,
   initialization, uncertainty, and program requirements.

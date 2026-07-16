@@ -147,24 +147,28 @@ any application code into `twingraph`.
 
 ## Runtime Contract
 
-TwinGraph does not execute an `ExecutablePlan`, but it defines a portable
-boundary for runtimes that do:
+TwinGraph does not execute an `ExecutablePlan`, but it defines versioned,
+runtime-neutral JSON plan, context, and result contracts for runtimes that do:
 
 - `ModelCatalog` supplies compile-time `ModelSpec` metadata without requiring
   executable code.
 - `CallableResolver` resolves a compiled `callable_key` inside an
   application-owned runtime. The combined `ModelRegistry` protocol remains for
   applications that intentionally provide both capabilities.
-- `ComponentCallable` fixes the native invocation shape as keyword-only
-  `inputs`, `params`, and a trusted `ExecutionContext`, returning values keyed
-  by declared output port.
-- `ExecutionResult` records graph and plan identity, issue time, model versions,
-  external artifact references, JSON-compatible outputs, and diagnostics.
+- `PythonComponentCallable` is an optional synchronous, in-process Python ABI
+  with keyword-only `inputs`, `params`, and `ExecutionContext`. It is not the
+  portable boundary; containers, RPC services, queues, and foreign runtimes use
+  the JSON contracts.
+- `ExecutionResult` records exact `plan_hash` identity, issue time, runtime and
+  implementation versions, external artifact references, JSON-compatible
+  outputs, and diagnostics.
 
-Plans and results expose `to_wire()` / `from_wire()` methods. Their envelopes
-carry independent schema versions so a runtime can reject unsupported formats
-before executing them. Large datasets and binary outputs should remain in
-application-owned storage and travel as `ArtifactRef` values.
+Plans and results expose `to_wire()` / `from_wire()` methods. Plan wire fields
+are JSON-constrained, `dependency_order` is the authoritative component order,
+and every plan carries a canonical hash that its result must repeat. Independent
+schema versions let a runtime reject unsupported formats before execution.
+Large datasets and binary outputs should remain in application-owned storage
+and travel as `ArtifactRef` values.
 
 Deployment policy—containers, resource requests, retries, queues, and
 scheduling—is intentionally not graph semantics and remains outside this

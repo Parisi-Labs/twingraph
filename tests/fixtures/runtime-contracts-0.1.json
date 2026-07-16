@@ -1,0 +1,57 @@
+{
+  "context": {
+    "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "execution_id": "run-01",
+    "graph_id": "graph-01",
+    "issue_time": "2026-01-01T00:00:00Z",
+    "metadata": {
+      "mode": "shadow"
+    },
+    "trace_id": "trace-01",
+    "version_id": "version-01"
+  },
+  "plan": {
+    "actions": [],
+    "compiler_version": "twingraph-compile/0.1.0",
+    "components": [],
+    "constraints": [],
+    "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "dependency_order": [],
+    "graph_id": "graph-01",
+    "plan_hash": "sha256:1abf958140351f3bf8b4019b91150829d59f9d270b6c0721f2c8203643fd1080",
+    "plan_schema_version": "twingraph-plan/0.1",
+    "program_compatibility": [],
+    "query_plan": [],
+    "validators": [],
+    "variables": {},
+    "version_id": "version-01"
+  },
+  "result": {
+    "compiler_version": "twingraph-compile/0.1.0",
+    "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "diagnostics": [],
+    "execution_id": "run-01",
+    "finished_at": "2026-01-01T00:00:01Z",
+    "graph_id": "graph-01",
+    "implementation_versions": {},
+    "input_artifacts": [],
+    "issue_time": "2026-01-01T00:00:00Z",
+    "output_artifacts": [
+      {
+        "content_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "media_type": "application/json",
+        "uri": "s3://example/results/run-01.json"
+      }
+    ],
+    "outputs": {
+      "recommendation": "hold"
+    },
+    "plan_hash": "sha256:1abf958140351f3bf8b4019b91150829d59f9d270b6c0721f2c8203643fd1080",
+    "plan_schema_version": "twingraph-plan/0.1",
+    "result_schema_version": "twingraph-execution-result/0.1",
+    "runtime_version": "example-runtime/1.0.0",
+    "started_at": "2026-01-01T00:00:00Z",
+    "status": "succeeded",
+    "version_id": "version-01"
+  }
+}

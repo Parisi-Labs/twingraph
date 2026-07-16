@@ -42,9 +42,9 @@ from .errors import (
 from .execution import (
     EXECUTION_RESULT_SCHEMA_VERSION,
     ArtifactRef,
-    ComponentCallable,
     ExecutionContext,
     ExecutionResult,
+    PythonComponentCallable,
 )
 from .fmi import (
     FmiVariable,
@@ -163,7 +163,6 @@ __all__ = [
     "CompileReport",
     "CompileResult",
     "CompiledConstraint",
-    "ComponentCallable",
     "CompositionError",
     "CompositionReport",
     "ConfirmationState",
@@ -210,6 +209,7 @@ __all__ = [
     "ProgramRegistry",
     "PropSpec",
     "Provenance",
+    "PythonComponentCallable",
     "Quantity",
     "QueryPlan",
     "Relation",
