@@ -14,7 +14,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .canonical import canonicalize, content_hash
+from .canonical import canonical_json, content_hash, hash_input
 from .compile import CompileResult, compile_graph
 from .document import TwinGraph
 from .errors import CODES, Diagnostic
@@ -26,6 +26,12 @@ from .registry import ModelCatalog, TypeRegistry
 from .units import UnitRegistry
 
 GraphRole = Literal["design", "desired", "observed", "candidate"]
+CrossGraphBindingKind = Literal[
+    "realizes",
+    "implements",
+    "derived_from",
+    "proposes_change_to",
+]
 GraphObjectKind = Literal[
     "entity",
     "relation",
@@ -59,7 +65,7 @@ class GraphVersionRef(_Base):
 
 
 class GraphObjectRef(GraphVersionRef):
-    object_kind: GraphObjectKind = "entity"
+    object_kind: GraphObjectKind
     object_id: str = Field(pattern=ID_PATTERN)
 
 
@@ -103,7 +109,7 @@ class CrossGraphBinding(_Base):
     """A typed, evidenced association between objects in separate graphs."""
 
     id: str = Field(pattern=ID_PATTERN)
-    kind: str = Field(pattern=ID_PATTERN)
+    kind: CrossGraphBindingKind
     source: GraphObjectRef
     target: GraphObjectRef
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
@@ -121,18 +127,27 @@ class GraphBundle(_Base):
     extensions: dict[str, Any] = Field(default_factory=dict)
 
     def compute_content_hash(self) -> str:
-        payload = self.model_dump(mode="json", exclude={"content_hash"})
+        """Return semantic identity for the bundle.
+
+        ``bundle_id`` and embedded graph hash-volatility fields are excluded.
+        Exact graph/version references in overlays and bindings remain semantic:
+        a mapping to a different version is a different bundle assertion.
+        """
+
+        payload = self.model_dump(mode="json", exclude={"bundle_id", "content_hash"})
+        for layer in payload["layers"]:
+            layer["graph"] = hash_input(layer["graph"])
         payload["layers"] = sorted(
             payload["layers"],
             key=lambda layer: (
-                layer["graph"]["graph_id"],
-                layer["graph"]["version_id"],
                 layer["id"],
+                layer["graph"]["graph_id"],
+                canonical_json(layer),
             ),
         )
-        for layer in payload["layers"]:
-            layer["graph"] = canonicalize(layer["graph"])
-        payload["bindings"] = sorted(payload["bindings"], key=lambda item: item["id"])
+        payload["bindings"] = sorted(
+            payload["bindings"], key=lambda item: (item["id"], canonical_json(item))
+        )
         return content_hash(payload)
 
     def with_content_hash(self) -> GraphBundle:
@@ -205,7 +220,8 @@ def compile_bundle(
         for layer in bundle.layers
     ]
     diagnostics = _validate_bundle(bundle)
-    if bundle.content_hash is not None and bundle.content_hash != bundle.compute_content_hash():
+    computed_hash = bundle.compute_content_hash()
+    if bundle.content_hash is not None and bundle.content_hash != computed_hash:
         diagnostics.append(
             Diagnostic(
                 severity="warning",
@@ -215,7 +231,7 @@ def compile_bundle(
             )
         )
     report = BundleCompileReport(
-        bundle_content_hash=bundle.compute_content_hash(),
+        bundle_content_hash=computed_hash,
         graph_results=graph_results,
         diagnostics=diagnostics,
     )
@@ -253,8 +269,11 @@ def _validate_bundle(bundle: GraphBundle) -> list[Diagnostic]:
             )
         by_key[key] = layer
 
-    evidence_ids = {
-        evidence.id for layer in bundle.layers for evidence in layer.graph.evidence
+    evidence_ids_by_graph = {
+        (layer.graph.graph_id, layer.graph.version_id): {
+            evidence.id for evidence in layer.graph.evidence
+        }
+        for layer in bundle.layers
     }
     for layer in bundle.layers:
         if layer.overlay_base:
@@ -265,18 +284,20 @@ def _validate_bundle(bundle: GraphBundle) -> list[Diagnostic]:
                     f"layer '{layer.id}' overlay_base {base_key[0]}@{base_key[1]} does not resolve",
                     {"layer": layer.id, "field": "overlay_base"},
                 )
-        if (
-            layer.expected_delta
-            and layer.overlay_base
-            and layer.expected_delta.base_version_id != layer.overlay_base.version_id
-        ):
-            add(
-                CODES.STRUCTURE,
-                f"layer '{layer.id}' expected_delta base_version_id does not match overlay_base",
-                {"layer": layer.id, "field": "expected_delta.base_version_id"},
-            )
+        if layer.overlay_base:
+            for field in ("expected_delta", "observed_delta"):
+                delta = getattr(layer, field)
+                if delta and delta.base_version_id != layer.overlay_base.version_id:
+                    add(
+                        CODES.STRUCTURE,
+                        f"layer '{layer.id}' {field} base_version_id does not match overlay_base",
+                        {"layer": layer.id, "field": f"{field}.base_version_id"},
+                    )
+        layer_evidence_ids = evidence_ids_by_graph.get(
+            (layer.graph.graph_id, layer.graph.version_id), set()
+        )
         for evidence_ref in layer.evidence_refs:
-            if evidence_ref not in evidence_ids:
+            if evidence_ref not in layer_evidence_ids:
                 add(
                     CODES.DANGLING_REF,
                     f"layer '{layer.id}' evidence_ref '{evidence_ref}' does not resolve",
@@ -284,7 +305,11 @@ def _validate_bundle(bundle: GraphBundle) -> list[Diagnostic]:
                 )
 
     binding_ids: set[str] = set()
-    entity_only_kinds = {"realizes", "implements", "proposes_change_to"}
+    entity_only_kinds: set[CrossGraphBindingKind] = {
+        "realizes",
+        "implements",
+        "proposes_change_to",
+    }
     for binding in bundle.bindings:
         if binding.id in binding_ids:
             add(CODES.DUPLICATE_ID, f"cross-graph binding id '{binding.id}' appears more than once")
@@ -321,8 +346,13 @@ def _validate_bundle(bundle: GraphBundle) -> list[Diagnostic]:
                 f"binding '{binding.id}' kind 'derived_from' requires compatible object kinds",
                 {"binding": binding.id, "field": "kind"},
             )
+        binding_evidence_ids = evidence_ids_by_graph.get(
+            (binding.source.graph_id, binding.source.version_id), set()
+        ) | evidence_ids_by_graph.get(
+            (binding.target.graph_id, binding.target.version_id), set()
+        )
         for evidence_ref in binding.evidence_refs:
-            if evidence_ref not in evidence_ids:
+            if evidence_ref not in binding_evidence_ids:
                 add(
                     CODES.DANGLING_REF,
                     f"binding '{binding.id}' evidence_ref '{evidence_ref}' does not resolve",
@@ -352,6 +382,7 @@ __all__ = [
     "BundleCompileResult",
     "CandidateState",
     "CrossGraphBinding",
+    "CrossGraphBindingKind",
     "GraphBundle",
     "GraphLayer",
     "GraphObjectKind",

@@ -639,7 +639,12 @@
           "type": "string"
         },
         "kind": {
-          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "enum": [
+            "realizes",
+            "implements",
+            "derived_from",
+            "proposes_change_to"
+          ],
           "title": "Kind",
           "type": "string"
         },
@@ -1170,7 +1175,6 @@
           "title": "As Of"
         },
         "object_kind": {
-          "default": "entity",
           "enum": [
             "entity",
             "relation",
@@ -1195,6 +1199,7 @@
       "required": [
         "graph_id",
         "version_id",
+        "object_kind",
         "object_id"
       ],
       "title": "GraphObjectRef",

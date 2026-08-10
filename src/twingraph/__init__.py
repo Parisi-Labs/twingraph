@@ -59,6 +59,7 @@ from .layers import (
     BundleCompileResult,
     CandidateState,
     CrossGraphBinding,
+    CrossGraphBindingKind,
     GraphBundle,
     GraphLayer,
     GraphObjectKind,
@@ -187,6 +188,7 @@ __all__ = [
     "ConstraintEvaluator",
     "ConstraintExpression",
     "CrossGraphBinding",
+    "CrossGraphBindingKind",
     "DataBinding",
     # errors
     "Diagnostic",
