@@ -6,6 +6,9 @@ semantic versioning.
 
 ## [Unreleased]
 
+- Add a first-class `GraphBundle` envelope for graph roles, overlays, candidate
+  lifecycle, semantic deltas, and evidenced cross-graph object bindings.
+
 ### Added
 
 - Runtime-neutral execution contracts now define a trusted `ExecutionContext`,

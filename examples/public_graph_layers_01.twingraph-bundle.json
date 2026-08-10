@@ -1,0 +1,129 @@
+{
+  "schema_version": "twingraph-bundle/0.1",
+  "bundle_id": "01KEXAMPLEBUNDLE0000000000",
+  "name": "Layered facility upgrade",
+  "layers": [
+    {
+      "id": "design",
+      "role": "design",
+      "graph": {
+        "schema_version": "twingraph/0.1",
+        "graph_id": "design-graph",
+        "version_id": "design-v1",
+        "workspace_id": "00000000000000000000000000",
+        "name": "Facility capability design",
+        "namespace": "metis.example.layers",
+        "status": "draft",
+        "created_at": "2026-01-01T00:00:00Z",
+        "created_by": "parisi-labs.example",
+        "provenance": {},
+        "entities": [
+          {"id": "facility-design", "type_ref": "metis.ops.Facility@1", "name": "Facility design"}
+        ]
+      }
+    },
+    {
+      "id": "desired",
+      "role": "desired",
+      "graph": {
+        "schema_version": "twingraph/0.1",
+        "graph_id": "desired-graph",
+        "version_id": "desired-v1",
+        "workspace_id": "00000000000000000000000000",
+        "name": "Desired facility state",
+        "namespace": "metis.example.layers",
+        "status": "draft",
+        "created_at": "2026-01-01T00:00:00Z",
+        "created_by": "parisi-labs.example",
+        "provenance": {},
+        "entities": [
+          {"id": "facility-target", "type_ref": "metis.ops.Facility@1", "name": "Desired facility"}
+        ]
+      }
+    },
+    {
+      "id": "observed",
+      "role": "observed",
+      "graph": {
+        "schema_version": "twingraph/0.1",
+        "graph_id": "observed-graph",
+        "version_id": "observed-v7",
+        "workspace_id": "00000000000000000000000000",
+        "name": "Observed facility state",
+        "namespace": "metis.example.layers",
+        "status": "draft",
+        "created_at": "2026-01-07T12:00:00Z",
+        "created_by": "parisi-labs.example",
+        "provenance": {},
+        "entities": [
+          {"id": "facility-live", "type_ref": "metis.ops.Facility@1", "name": "Observed facility"}
+        ]
+      }
+    },
+    {
+      "id": "candidate",
+      "role": "candidate",
+      "graph": {
+        "schema_version": "twingraph/0.1",
+        "graph_id": "candidate-graph",
+        "version_id": "candidate-v1",
+        "workspace_id": "00000000000000000000000000",
+        "name": "Candidate facility upgrade",
+        "namespace": "metis.example.layers",
+        "status": "draft",
+        "created_at": "2026-01-08T12:00:00Z",
+        "created_by": "parisi-labs.example",
+        "parent_version_id": "observed-v7",
+        "provenance": {},
+        "entities": [
+          {"id": "facility-proposal", "type_ref": "metis.ops.Facility@1", "name": "Proposed facility"}
+        ]
+      },
+      "overlay_base": {
+        "graph_id": "observed-graph",
+        "version_id": "observed-v7",
+        "as_of": "2026-01-07T12:00:00Z"
+      },
+      "candidate_state": "evaluated",
+      "expected_delta": {
+        "patch_id": "candidate-expected-delta",
+        "base_version_id": "observed-v7",
+        "intent": "Represent the evaluated upgrade without changing observed truth",
+        "created_by": "parisi-labs.example",
+        "created_at": "2026-01-08T12:00:00Z",
+        "operations": [],
+        "evidence_refs": [],
+        "assumptions_created": [],
+        "validation_plan": ["compile candidate", "compare expected and observed deltas"],
+        "status": "schema_validated"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "id": "observed-implements-design",
+      "kind": "implements",
+      "source": {"graph_id": "observed-graph", "version_id": "observed-v7", "object_kind": "entity", "object_id": "facility-live"},
+      "target": {"graph_id": "design-graph", "version_id": "design-v1", "object_kind": "entity", "object_id": "facility-design"},
+      "confidence": 1.0,
+      "evidence_refs": []
+    },
+    {
+      "id": "observed-realizes-desired",
+      "kind": "realizes",
+      "source": {"graph_id": "observed-graph", "version_id": "observed-v7", "object_kind": "entity", "object_id": "facility-live"},
+      "target": {"graph_id": "desired-graph", "version_id": "desired-v1", "object_kind": "entity", "object_id": "facility-target"},
+      "confidence": 0.8,
+      "evidence_refs": []
+    },
+    {
+      "id": "candidate-proposes-observed-change",
+      "kind": "proposes_change_to",
+      "source": {"graph_id": "candidate-graph", "version_id": "candidate-v1", "object_kind": "entity", "object_id": "facility-proposal"},
+      "target": {"graph_id": "observed-graph", "version_id": "observed-v7", "object_kind": "entity", "object_id": "facility-live"},
+      "confidence": 0.9,
+      "evidence_refs": []
+    }
+  ],
+  "extensions": {}
+}
