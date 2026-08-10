@@ -17,6 +17,7 @@ python -m pip install -e ".[dev]"
 pytest
 ruff check src/twingraph tests
 python -m twingraph._schema_tool > schema/twingraph-0.1.schema.json
+python -m twingraph._bundle_schema_tool > schema/twingraph-bundle-0.1.schema.json
 ```
 
 Run the full test suite before opening a pull request. If you change pydantic
