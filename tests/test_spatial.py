@@ -9,6 +9,7 @@ import twingraph as tg
 from pydantic import ValidationError
 from twingraph.canonical import hash_input
 from twingraph.errors import CODES
+from twingraph.registry import InMemoryTypeRegistry, PropSpec, TypeDef
 
 _EXAMPLE = (
     Path(__file__).resolve().parents[1]
@@ -38,6 +39,39 @@ def test_spatial_pack_is_optional_and_composable():
     registry = _spatial_registry()
     assert registry.has("metis.spatial.Corridor@1")
     assert registry.has("metis.relation.routes_through@1")
+
+
+def test_spatial_pack_preserves_core_located_in_type_and_unit_validation(model_registry):
+    graph = _graph()
+    graph.relations.append(
+        tg.Relation(
+            id="bad-distance",
+            type_ref="located_in",
+            source_entity_id="origin",
+            target_entity_id="destination",
+            properties={"distance_km": {"value": 1.0, "unit": "MW"}},
+        )
+    )
+    result = _compile(graph, model_registry)
+    assert CODES.UNIT_MISMATCH in {item.code for item in result.report.errors()}
+    located_in = _spatial_registry().resolve("metis.relation.located_in@1")
+    assert any(prop.name == "distance_km" for prop in located_in.optional_properties)
+
+
+def test_type_registry_rejects_conflicting_redefinitions():
+    registry = InMemoryTypeRegistry()
+    original = TypeDef(
+        type_ref="example.Asset@1",
+        kind="entity",
+        title="Asset",
+        optional_properties=(PropSpec("length", unit="m", required=False),),
+    )
+    registry.register(original)
+    registry.register(original)
+    with pytest.raises(ValueError, match="conflicting TypeDef"):
+        registry.register(
+            TypeDef(type_ref="example.Asset@1", kind="entity", title="Different asset")
+        )
 
 
 def test_spatial_profile_round_trips_and_compiles(model_registry):
@@ -79,6 +113,111 @@ def test_spatial_compile_reports_overlapping_required_clearances(model_registry)
     )
     result = _compile(graph, model_registry)
     assert any("required clearances" in item.message for item in result.report.errors())
+
+
+def test_duplicate_placements_report_and_hash_deterministically(model_registry):
+    first = _graph()
+    duplicate = first.spatial.placements[0].model_copy(deep=True)
+    duplicate.position = [3.0, 3.0]
+    duplicate.required_clearance = None
+    first.spatial.placements.append(duplicate)
+
+    second = first.model_copy(deep=True)
+    second.spatial.placements.reverse()
+    assert first.compute_content_hash() == second.compute_content_hash()
+    result = _compile(first, model_registry)
+    assert any(
+        item.code == CODES.DUPLICATE_ID and "spatial placement" in item.message
+        for item in result.report.errors()
+    )
+
+
+def test_port_compatibility_only_enforces_route_requirements(model_registry):
+    graph = _graph()
+    source = graph.entities[0].ports["outbound"].spatial
+    target = graph.entities[1].ports["inbound"].spatial
+    source.compatibility = ["outlet"]
+    target.compatibility = ["inlet"]
+    graph.spatial.routes[0].compatibility = []
+    assert _compile(graph, model_registry).ok
+
+    graph.spatial.routes[0].compatibility = ["ground_route"]
+    result = _compile(graph, model_registry)
+    assert any("compatibility" in item.message for item in result.report.errors())
+
+
+def test_frame_cycles_parent_refs_and_transform_dimensions_are_reported(model_registry):
+    graph = _graph()
+    graph.spatial.frames[0].parent_frame_id = "child"
+    graph.spatial.frames[0].parent_transform = tg.FrameTransform(
+        translation=[0.0, 0.0], rotation=[0.0]
+    )
+    graph.spatial.frames.append(
+        tg.CoordinateFrame(
+            id="child",
+            dimensions=2,
+            parent_frame_id="site",
+            parent_transform=tg.FrameTransform(
+                translation=[0.0, 0.0], rotation=[0.0]
+            ),
+        )
+    )
+    graph.spatial.frames.append(
+        tg.CoordinateFrame(
+            id="orphan",
+            dimensions=2,
+            parent_frame_id="missing",
+            parent_transform=tg.FrameTransform(
+                translation=[0.0, 0.0], rotation=[0.0]
+            ),
+        )
+    )
+    graph.spatial.frames.append(tg.CoordinateFrame(id="world-3d", dimensions=3))
+    graph.spatial.frames.append(
+        tg.CoordinateFrame(
+            id="bad-transform",
+            dimensions=2,
+            parent_frame_id="world-3d",
+            parent_transform=tg.FrameTransform(
+                translation=[0.0, 0.0], rotation=[0.0]
+            ),
+        )
+    )
+    result = _compile(graph, model_registry)
+    codes = {item.code for item in result.report.errors()}
+    assert CODES.CYCLE in codes
+    assert CODES.DANGLING_REF in codes
+    assert CODES.STRUCTURE in codes
+
+
+def test_duplicate_spatial_ids_are_reported(model_registry):
+    graph = _graph()
+    graph.spatial.regions.append(
+        tg.SpatialRegion(
+            id="route-1",
+            geometry=graph.spatial.regions[0].geometry.model_copy(deep=True),
+        )
+    )
+    result = _compile(graph, model_registry)
+    assert any(
+        item.code == CODES.DUPLICATE_ID and "route-1" in item.message
+        for item in result.report.errors()
+    )
+
+
+def test_frame_transform_requires_explicit_identity_components():
+    with pytest.raises(ValidationError):
+        tg.FrameTransform()
+
+
+def test_spatial_distance_units_include_feet_but_angles_exclude_radians(model_registry):
+    graph = _graph()
+    graph.spatial.frames[0].distance_unit = "feet"
+    assert _compile(graph, model_registry).ok
+
+    graph.spatial.frames[0].angle_unit = "rad"
+    result = _compile(graph, model_registry)
+    assert CODES.UNIT_MISMATCH in {item.code for item in result.report.errors()}
 
 
 def test_proposed_reservation_does_not_claim_observed_state(model_registry):

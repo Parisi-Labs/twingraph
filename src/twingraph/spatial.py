@@ -1,25 +1,31 @@
 """Optional spatial topology profile for TwinGraph documents.
 
 The profile is data-only: it describes coordinate frames, geometry, placement,
-ports, routes, corridors, and reservations.  It deliberately does not perform
-placement or routing optimization.
+ports, routes, corridors, and reservations. It deliberately does not perform
+placement or routing optimization. Clearance overlap checks are limited to
+entity-placement axis-aligned bounding boxes expressed in the same frame;
+parent transforms are not composed, and port clearances are only checked for
+shape and reference integrity.
 """
 
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .errors import CODES, Diagnostic
+from .ids import ID_PATTERN
 from .units import Quantity, UnitRegistry
 
 if TYPE_CHECKING:
     from .document import TwinGraph
-    from .registry import TypeRegistry
+    from .primitives import Entity
 
-_ID_PATTERN = r"^[A-Za-z0-9_.:-]+$"
+DiagnosticRef = dict[str, Any] | None
+DiagnosticAdder = Callable[[str, str, DiagnosticRef], None]
 
 
 class _Base(BaseModel):
@@ -27,12 +33,12 @@ class _Base(BaseModel):
 
 
 class FrameTransform(_Base):
-    translation: list[float] = Field(default_factory=list, min_length=2, max_length=3)
-    rotation: list[float] = Field(default_factory=list, min_length=1, max_length=3)
+    translation: list[float] = Field(min_length=2, max_length=3)
+    rotation: list[float] = Field(min_length=1, max_length=3)
 
 
 class CoordinateFrame(_Base):
-    id: str = Field(pattern=_ID_PATTERN)
+    id: str = Field(pattern=ID_PATTERN)
     dimensions: Literal[2, 3]
     distance_unit: str = "m"
     angle_unit: str = "deg"
@@ -127,14 +133,14 @@ class EntityPlacement(_Base):
 
 
 class SpatialRegion(_Base):
-    id: str = Field(pattern=_ID_PATTERN)
+    id: str = Field(pattern=ID_PATTERN)
     geometry: Geometry
     role: Literal["region", "corridor", "exclusion_zone"] = "region"
     capacity: Quantity | None = None
 
 
 class SpatialRoute(_Base):
-    id: str = Field(pattern=_ID_PATTERN)
+    id: str = Field(pattern=ID_PATTERN)
     source_entity_id: str
     source_port: str
     target_entity_id: str
@@ -147,7 +153,7 @@ class SpatialRoute(_Base):
 
 
 class SpatialReservation(_Base):
-    id: str = Field(pattern=_ID_PATTERN)
+    id: str = Field(pattern=ID_PATTERN)
     geometry: Geometry
     reserved_by_entity_id: str | None = None
     route_id: str | None = None
@@ -169,7 +175,6 @@ class SpatialTopology(_Base):
 def validate_spatial_topology(
     graph: TwinGraph,
     *,
-    type_registry: TypeRegistry,
     unit_registry: UnitRegistry,
 ) -> list[Diagnostic]:
     """Return compile diagnostics for the optional spatial profile."""
@@ -195,18 +200,14 @@ def validate_spatial_topology(
         if frame.id in frames:
             add(CODES.DUPLICATE_ID, f"coordinate frame id '{frame.id}' appears more than once")
         frames[frame.id] = frame
-        if not unit_registry.is_known(frame.distance_unit) or not unit_registry.compatible(
-            frame.distance_unit, "m"
-        ):
+        if not _is_distance_unit(frame.distance_unit, unit_registry):
             add(
                 CODES.UNIT_MISMATCH,
                 f"coordinate frame '{frame.id}' distance_unit '{frame.distance_unit}' "
                 "is not a distance unit",
                 {"frame": frame.id, "field": "distance_unit"},
             )
-        if not unit_registry.is_known(frame.angle_unit) or not unit_registry.compatible(
-            frame.angle_unit, "deg"
-        ):
+        if not _is_angle_unit(frame.angle_unit, unit_registry):
             add(
                 CODES.UNIT_MISMATCH,
                 f"coordinate frame '{frame.id}' angle_unit '{frame.angle_unit}' is not an angle unit",
@@ -244,7 +245,15 @@ def validate_spatial_topology(
     routes = {route.id: route for route in topology.routes}
     evidence_ids = {evidence.id for evidence in graph.evidence}
 
+    placed_entities: set[str] = set()
     for placement in topology.placements:
+        if placement.entity_id in placed_entities:
+            add(
+                CODES.DUPLICATE_ID,
+                f"entity '{placement.entity_id}' has more than one spatial placement",
+                {"entity": placement.entity_id, "field": "spatial.placements"},
+            )
+        placed_entities.add(placement.entity_id)
         if placement.entity_id not in entities:
             add(
                 CODES.DANGLING_REF,
@@ -273,7 +282,7 @@ def validate_spatial_topology(
         ):
             if geometry:
                 _check_geometry(add, frames, geometry, {"entity": placement.entity_id})
-        if placement.height and not unit_registry.compatible(placement.height.unit, "m"):
+        if placement.height and not _is_distance_unit(placement.height.unit, unit_registry):
             add(
                 CODES.UNIT_MISMATCH,
                 f"placement for entity '{placement.entity_id}' height must use a distance unit",
@@ -347,11 +356,25 @@ def validate_spatial_topology(
 
     _check_clearance_overlaps(topology.placements, add)
     _check_duplicate_spatial_ids(topology, add)
-    _ = type_registry  # reserved for type-pack-specific spatial validators
     return diagnostics
 
 
-def _check_coordinates(add, frames, frame_id, coordinates, label, ref) -> None:
+def _is_distance_unit(unit: str, registry: UnitRegistry) -> bool:
+    return registry.is_known(unit) and registry.normalize(unit)[0] in {"m", "km", "ft"}
+
+
+def _is_angle_unit(unit: str, registry: UnitRegistry) -> bool:
+    return registry.is_known(unit) and registry.normalize(unit)[0] == "deg"
+
+
+def _check_coordinates(
+    add: DiagnosticAdder,
+    frames: dict[str, CoordinateFrame],
+    frame_id: str,
+    coordinates: list[float],
+    label: str,
+    ref: DiagnosticRef,
+) -> None:
     frame = frames.get(frame_id)
     if frame is None:
         add(CODES.DANGLING_REF, f"{label} references missing frame '{frame_id}'", ref)
@@ -364,7 +387,14 @@ def _check_coordinates(add, frames, frame_id, coordinates, label, ref) -> None:
         )
 
 
-def _check_orientation(add, frames, frame_id, orientation, label, ref) -> None:
+def _check_orientation(
+    add: DiagnosticAdder,
+    frames: dict[str, CoordinateFrame],
+    frame_id: str,
+    orientation: list[float],
+    label: str,
+    ref: DiagnosticRef,
+) -> None:
     if not orientation:
         return
     frame = frames.get(frame_id)
@@ -379,7 +409,12 @@ def _check_orientation(add, frames, frame_id, orientation, label, ref) -> None:
         )
 
 
-def _check_geometry(add, frames, geometry, ref) -> None:
+def _check_geometry(
+    add: DiagnosticAdder,
+    frames: dict[str, CoordinateFrame],
+    geometry: Geometry,
+    ref: DiagnosticRef,
+) -> None:
     if isinstance(geometry, PointGeometry):
         points = [geometry.coordinates]
     elif isinstance(geometry, BoundingBoxGeometry):
@@ -390,7 +425,9 @@ def _check_geometry(add, frames, geometry, ref) -> None:
         _check_coordinates(add, frames, geometry.frame_id, point, f"{geometry.kind} geometry", ref)
 
 
-def _check_frame_cycles(frames, add) -> None:
+def _check_frame_cycles(
+    frames: dict[str, CoordinateFrame], add: DiagnosticAdder
+) -> None:
     for start in sorted(frames):
         seen: set[str] = set()
         current = start
@@ -406,7 +443,12 @@ def _check_frame_cycles(frames, add) -> None:
             current = frames[current].parent_frame_id
 
 
-def _check_route_endpoint(add, entities, route, side) -> None:
+def _check_route_endpoint(
+    add: DiagnosticAdder,
+    entities: dict[str, Entity],
+    route: SpatialRoute,
+    side: Literal["source", "target"],
+) -> None:
     entity_id = getattr(route, f"{side}_entity_id")
     port_id = getattr(route, f"{side}_port")
     entity = entities.get(entity_id)
@@ -424,7 +466,11 @@ def _check_route_endpoint(add, entities, route, side) -> None:
         )
 
 
-def _check_port_compatibility(add, entities, route) -> None:
+def _check_port_compatibility(
+    add: DiagnosticAdder,
+    entities: dict[str, Entity],
+    route: SpatialRoute,
+) -> None:
     source = entities.get(route.source_entity_id)
     target = entities.get(route.target_entity_id)
     if not source or not target:
@@ -442,16 +488,12 @@ def _check_port_compatibility(add, entities, route) -> None:
             f"route '{route.id}' compatibility is not supported by both endpoint ports",
             {"route": route.id, "field": "compatibility"},
         )
-    elif source_tags and target_tags and source_tags.isdisjoint(target_tags):
-        add(
-            CODES.STRUCTURE,
-            f"route '{route.id}' endpoint ports have incompatible spatial metadata",
-            {"route": route.id, "field": "compatibility"},
-        )
 
 
-def _check_clearance_overlaps(placements, add) -> None:
-    by_frame = defaultdict(list)
+def _check_clearance_overlaps(
+    placements: list[EntityPlacement], add: DiagnosticAdder
+) -> None:
+    by_frame: dict[str, list[tuple[str, BoundingBoxGeometry]]] = defaultdict(list)
     for placement in placements:
         if placement.required_clearance:
             by_frame[placement.required_clearance.frame_id].append(
@@ -476,8 +518,10 @@ def _check_clearance_overlaps(placements, add) -> None:
                     )
 
 
-def _check_duplicate_spatial_ids(topology, add) -> None:
-    locations = defaultdict(list)
+def _check_duplicate_spatial_ids(
+    topology: SpatialTopology, add: DiagnosticAdder
+) -> None:
+    locations: dict[str, list[str]] = defaultdict(list)
     for kind, values in (
         ("frame", topology.frames),
         ("region", topology.regions),

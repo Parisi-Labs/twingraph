@@ -1089,6 +1089,10 @@
           "type": "array"
         }
       },
+      "required": [
+        "translation",
+        "rotation"
+      ],
       "title": "FrameTransform",
       "type": "object"
     },

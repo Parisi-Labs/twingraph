@@ -32,6 +32,8 @@ def test_default_operational_unit_table_version():
     assert DEFAULT_UNIT_REGISTRY.compatible("kW", "MW")
     assert DEFAULT_UNIT_REGISTRY.compatible("$/MW", "USD/MW")
     assert DEFAULT_UNIT_REGISTRY.compatible("probability", "ratio")
+    assert DEFAULT_UNIT_REGISTRY.is_known("ft")
+    assert not DEFAULT_UNIT_REGISTRY.is_known("rad")
     assert "cycles" not in CANONICAL_UNITS
     assert not DEFAULT_UNIT_REGISTRY.is_known("cycles")
 

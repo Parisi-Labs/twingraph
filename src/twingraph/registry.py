@@ -97,6 +97,12 @@ class InMemoryTypeRegistry:
             self.register(td)
 
     def register(self, type_def: TypeDef) -> None:
+        existing = self._by_ref.get(type_def.type_ref)
+        if existing is not None and existing != type_def:
+            raise ValueError(
+                f"conflicting TypeDef registration for '{type_def.type_ref}'; "
+                "type packs must not redefine an existing type_ref"
+            )
         self._by_ref[type_def.type_ref] = type_def
 
     def has(self, type_ref: str) -> bool:
@@ -273,7 +279,6 @@ SPATIAL_TYPE_PACK = TypePack(
                 title=name.replace("_", " "),
             )
             for name in (
-                "located_in",
                 "adjacent_to",
                 "overlaps",
                 "intersects",

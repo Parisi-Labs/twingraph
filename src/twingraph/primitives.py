@@ -17,11 +17,10 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .ids import ID_PATTERN
 from .spatial import SpatialPort
 from .units import Quantity
 
-# An id is permissive: authoring ids ('bat','soc') and ULIDs both allowed.
-ID_PATTERN = r"^[A-Za-z0-9_.:-]+$"
 # type_ref like 'metis.energy.Battery@1' — dotted namespace (leading lowercase)
 # whose final class segment may be CamelCase, then '@<major>'.
 TYPE_REF_PATTERN = r"^[a-z][A-Za-z0-9_.]*@\d+$"

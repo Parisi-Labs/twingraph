@@ -6,12 +6,11 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
 - Add an optional spatial topology profile and type pack for coordinate frames,
   geometry, placement, spatial ports, routes, corridors, reservations, and
   compile-time spatial validation.
-
-### Added
-
 - Runtime-neutral execution contracts now define a trusted `ExecutionContext`,
   external `ArtifactRef`s, and a versioned, JSON-compatible `ExecutionResult`
   envelope; an optional `PythonComponentCallable` protocol separately describes

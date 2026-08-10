@@ -149,7 +149,12 @@ def canonicalize(doc: dict) -> dict:
         if isinstance(spatial.get("placements"), list):
             spatial["placements"] = sorted(
                 spatial["placements"],
-                key=lambda item: item.get("entity_id", "") if isinstance(item, dict) else repr(item),
+                key=lambda item: (
+                    item.get("entity_id", ""),
+                    canonical_json(item),
+                )
+                if isinstance(item, dict)
+                else ("", repr(item)),
             )
 
     return out
