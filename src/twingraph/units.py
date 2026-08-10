@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-UNIT_TABLE_VERSION = "ucum-subset/0.4"
+UNIT_TABLE_VERSION = "ucum-subset/0.5"
 
 # Canonical spellings the IR hashes and compiles against.
 CANONICAL_UNITS: frozenset[str] = frozenset(
@@ -54,6 +54,8 @@ CANONICAL_UNITS: frozenset[str] = frozenset(
         # Operations / logistics / data centers.
         "m",
         "km",
+        "deg",
+        "rad",
         "tonne",
         "item",
         "item/h",
@@ -168,6 +170,11 @@ _ALIASES: dict[str, tuple[str, float]] = {
     "meter": ("m", 1.0),
     "km": ("km", 1.0),
     "kilometer": ("km", 1.0),
+    "deg": ("deg", 1.0),
+    "degree": ("deg", 1.0),
+    "degrees": ("deg", 1.0),
+    "rad": ("deg", 57.29577951308232),
+    "radian": ("deg", 57.29577951308232),
     "tonne": ("tonne", 1.0),
     "metric_ton": ("tonne", 1.0),
     # SI mass folds into the existing tonne canonical (mass stays one family).

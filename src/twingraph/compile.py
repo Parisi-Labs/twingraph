@@ -26,6 +26,7 @@ from .metis_expr import ExpressionParseError, extract_references
 from .primitives import EXECUTABLE_MODEL_KINDS, FOREIGN_MODEL_KINDS
 from .programs import BUILTIN_PROGRAM_REGISTRY, ProgramRegistry
 from .registry import ModelCatalog, TypeRegistry
+from .spatial import validate_spatial_topology
 from .units import DEFAULT_UNIT_REGISTRY, UnitRegistry
 
 COMPILER_VERSION = "twingraph-compile/0.1.0"
@@ -272,6 +273,13 @@ def compile_graph(
     _stage_required_fields(ctx, type_registry)
     _stage_resolve_refs(ctx, type_registry)
     _stage_validate_units(ctx, type_registry, unit_registry)
+    ctx.diagnostics.extend(
+        validate_spatial_topology(
+            graph,
+            type_registry=type_registry,
+            unit_registry=unit_registry,
+        )
+    )
     _stage_resolve_models(ctx, model_registry, unit_registry)
     validator_results = _stage_structural_validators(ctx)
     dependency_order = _stage_dependency_graph(ctx)

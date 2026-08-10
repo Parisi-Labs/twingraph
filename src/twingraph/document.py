@@ -31,6 +31,7 @@ from .primitives import (
     Validator,
     Variable,
 )
+from .spatial import SpatialTopology
 
 # Documented single-tenant sentinel for OSS adopters.
 SENTINEL_WORKSPACE = "00000000000000000000000000"
@@ -68,6 +69,7 @@ class TwinGraph(BaseModel):
     objectives: list[Objective] = Field(default_factory=list)
     validators: list[Validator] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
+    spatial: SpatialTopology | None = None
     extensions: dict[str, Any] = Field(default_factory=dict)
 
     _frozen: bool = PrivateAttr(default=False)

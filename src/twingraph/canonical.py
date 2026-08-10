@@ -141,10 +141,32 @@ def canonicalize(doc: dict) -> dict:
                 for group in action["mutual_exclusion"]
             ]
 
+    spatial = out.get("spatial")
+    if isinstance(spatial, dict):
+        for key in ("frames", "regions", "routes", "reservations"):
+            if isinstance(spatial.get(key), list):
+                spatial[key] = sorted(spatial[key], key=_sort_key)
+        if isinstance(spatial.get("placements"), list):
+            spatial["placements"] = sorted(
+                spatial["placements"],
+                key=lambda item: item.get("entity_id", "") if isinstance(item, dict) else repr(item),
+            )
+
     return out
 
 
 def hash_input(doc: dict) -> dict:
     """Return the canonical doc with the hash-volatility set removed."""
     canon = canonicalize(doc)
+    # Optional profiles added after the original 0.1 documents must not change
+    # the identity of a legacy document merely because model_dump materializes
+    # their absent defaults.  Present spatial semantics remain fully hashed.
+    if canon.get("spatial") is None:
+        canon.pop("spatial", None)
+    for entity in canon.get("entities", []) or []:
+        if not isinstance(entity, dict):
+            continue
+        for port in (entity.get("ports") or {}).values():
+            if isinstance(port, dict) and port.get("spatial") is None:
+                port.pop("spatial", None)
     return {k: v for k, v in canon.items() if k not in HASH_EXCLUDED_FIELDS}

@@ -240,6 +240,51 @@ RELATION_TYPE_PACK = TypePack(
 )
 
 
+SPATIAL_TYPE_PACK = TypePack(
+    name="metis.spatial.topology@1",
+    description=(
+        "Optional spatial vocabulary for regions, corridors, routes, reservations, "
+        "and their relations."
+    ),
+    type_defs=(
+        TypeDef(type_ref="metis.spatial.Region@1", kind="entity", title="Spatial region"),
+        TypeDef(
+            type_ref="metis.spatial.Corridor@1",
+            kind="entity",
+            title="Reserved spatial corridor",
+            ports=("entry", "exit", "route"),
+        ),
+        TypeDef(
+            type_ref="metis.spatial.Route@1",
+            kind="entity",
+            title="Spatial route",
+            ports=("origin", "destination", "corridor"),
+        ),
+        TypeDef(
+            type_ref="metis.spatial.Reservation@1",
+            kind="entity",
+            title="Spatial reservation",
+            ports=("subject", "region", "route"),
+        ),
+        *tuple(
+            TypeDef(
+                type_ref=f"metis.relation.{name}@1",
+                kind="relation",
+                title=name.replace("_", " "),
+            )
+            for name in (
+                "located_in",
+                "adjacent_to",
+                "overlaps",
+                "intersects",
+                "routes_through",
+                "reserves",
+            )
+        ),
+    ),
+)
+
+
 POWER_TYPE_PACK = TypePack(
     name="metis.energy.power@1",
     description="Power-first asset vocabulary for storage, renewables, generators, and grid assets.",
@@ -820,6 +865,7 @@ __all__ = [
     "PLATFORM_ANALYSIS_TYPE_PACK",
     "POWER_TYPE_PACK",
     "RELATION_TYPE_PACK",
+    "SPATIAL_TYPE_PACK",
     "ActionSpec",
     "CallableResolver",
     "IOContract",

@@ -1,5 +1,10 @@
 # Examples
 
+`public_spatial_topology_01.twingraph.json` demonstrates the optional spatial
+profile with an observed site frame, entity footprints and spatial ports, a
+reserved corridor, and a proposed route. Compile it with a type registry that
+includes `SPATIAL_TYPE_PACK`.
+
 This directory contains small illustrative TwinGraph documents for public tests
 and documentation.
 

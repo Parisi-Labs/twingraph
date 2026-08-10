@@ -17,6 +17,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .spatial import SpatialPort
 from .units import Quantity
 
 # An id is permissive: authoring ids ('bat','soc') and ULIDs both allowed.
@@ -90,6 +91,7 @@ class EntityPort(_Base):
     variable_id: str | None = None
     relation_types: list[str] = Field(default_factory=list)
     description: str | None = None
+    spatial: SpatialPort | None = None
 
 
 class Entity(_Base):
