@@ -8,6 +8,8 @@ semantic versioning.
 
 ### Added
 
+- Add a first-class `GraphBundle` envelope for graph roles, overlays, candidate
+  lifecycle, semantic deltas, and evidenced cross-graph object bindings.
 - Runtime-neutral execution contracts now define a trusted `ExecutionContext`,
   external `ArtifactRef`s, and a versioned, JSON-compatible `ExecutionResult`
   envelope; an optional `PythonComponentCallable` protocol separately describes

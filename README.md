@@ -253,12 +253,15 @@ edits fork a new draft and preserve lineage.
 The published schema is generated from the pydantic models:
 
 - [`schema/twingraph-0.1.schema.json`](schema/twingraph-0.1.schema.json)
+- [`schema/twingraph-bundle-0.1.schema.json`](schema/twingraph-bundle-0.1.schema.json)
 - Document `schema_version`: `twingraph/0.1`
+- Bundle `schema_version`: `twingraph-bundle/0.1`
 
 Regenerate and check drift:
 
 ```bash
 python -m twingraph._schema_tool > schema/twingraph-0.1.schema.json
+python -m twingraph._bundle_schema_tool > schema/twingraph-bundle-0.1.schema.json
 pytest tests/test_schema_parity.py
 ```
 

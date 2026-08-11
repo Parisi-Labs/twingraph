@@ -1,5 +1,9 @@
 # Examples
 
+`public_graph_layers_01.twingraph-bundle.json` demonstrates separate design,
+desired, observed, and candidate graphs, stable cross-graph bindings, and an
+expected candidate delta without merging proposed claims into observed truth.
+
 This directory contains small illustrative TwinGraph documents for public tests
 and documentation.
 

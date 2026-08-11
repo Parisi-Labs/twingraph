@@ -54,6 +54,21 @@ from .fmi import (
     read_fmu_model_description,
 )
 from .ids import Ulid, new_ulid, validate_ulid
+from .layers import (
+    BundleCompileReport,
+    BundleCompileResult,
+    CandidateState,
+    CrossGraphBinding,
+    CrossGraphBindingKind,
+    GraphBundle,
+    GraphLayer,
+    GraphObjectKind,
+    GraphObjectRef,
+    GraphRole,
+    GraphVersionRef,
+    LayerCompileResult,
+    compile_bundle,
+)
 from .patch import (
     Operation,
     PatchApplyReport,
@@ -159,7 +174,10 @@ __all__ = [
     "ActionBound",
     "ActionSpec",
     "ArtifactRef",
+    "BundleCompileReport",
+    "BundleCompileResult",
     "CallableResolver",
+    "CandidateState",
     "CompileReport",
     "CompileResult",
     "CompiledConstraint",
@@ -169,6 +187,8 @@ __all__ = [
     "Constraint",
     "ConstraintEvaluator",
     "ConstraintExpression",
+    "CrossGraphBinding",
+    "CrossGraphBindingKind",
     "DataBinding",
     # errors
     "Diagnostic",
@@ -184,10 +204,17 @@ __all__ = [
     "FmiVariable",
     "FmuModelDescription",
     "FrozenGraphError",
+    "GraphBundle",
+    "GraphLayer",
+    "GraphObjectKind",
+    "GraphObjectRef",
+    "GraphRole",
+    "GraphVersionRef",
     "IOContract",
     "ImmutableGraphError",
     "InMemoryProgramRegistry",
     "InMemoryTypeRegistry",
+    "LayerCompileResult",
     "LifecycleState",
     "ModelBinding",
     "ModelBindingKind",
@@ -239,6 +266,7 @@ __all__ = [
     "canonical_json",
     "canonicalize",
     # compile
+    "compile_bundle",
     "compile_graph",
     # composition
     "compose",
