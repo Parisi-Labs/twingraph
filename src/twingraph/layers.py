@@ -129,14 +129,17 @@ class GraphBundle(_Base):
     def compute_content_hash(self) -> str:
         """Return semantic identity for the bundle.
 
-        ``bundle_id`` and embedded graph hash-volatility fields are excluded.
-        Exact graph/version references in overlays and bindings remain semantic:
-        a mapping to a different version is a different bundle assertion.
+        ``bundle_id`` and embedded graph creation time / declared hash are
+        excluded. Layer ``version_id`` values and exact graph/version references
+        in overlays and bindings remain semantic: a bundle pins versions, so a
+        different layer version or mapping is a different bundle assertion.
         """
 
         payload = self.model_dump(mode="json", exclude={"bundle_id", "content_hash"})
         for layer in payload["layers"]:
+            graph_version_id = layer["graph"]["version_id"]
             layer["graph"] = hash_input(layer["graph"])
+            layer["graph"]["version_id"] = graph_version_id
         payload["layers"] = sorted(
             payload["layers"],
             key=lambda layer: (
