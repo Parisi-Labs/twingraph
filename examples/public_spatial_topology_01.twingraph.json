@@ -1,0 +1,141 @@
+{
+  "schema_version": "twingraph/0.1",
+  "graph_id": "spatial-logistics-demo",
+  "version_id": "spatial-logistics-demo-v1",
+  "workspace_id": "00000000000000000000000000",
+  "name": "Spatial logistics corridor",
+  "namespace": "metis.example.spatial",
+  "status": "draft",
+  "created_at": "2026-01-01T00:00:00Z",
+  "created_by": "parisi-labs.example",
+  "provenance": {},
+  "entities": [
+    {
+      "id": "origin",
+      "type_ref": "metis.operations.LogisticsNode@1",
+      "name": "Origin node",
+      "properties": {"handling_capacity_items_per_h": {"value": 100.0, "unit": "item/h"}},
+      "ports": {
+        "outbound": {
+          "kind": "outbound",
+          "direction": "output",
+          "spatial": {
+            "frame_id": "site",
+            "anchor": [4.0, 2.0],
+            "orientation": [0.0],
+            "compatibility": ["ground_route"]
+          }
+        }
+      }
+    },
+    {
+      "id": "destination",
+      "type_ref": "metis.operations.LogisticsNode@1",
+      "name": "Destination node",
+      "properties": {"handling_capacity_items_per_h": {"value": 100.0, "unit": "item/h"}},
+      "ports": {
+        "inbound": {
+          "kind": "inbound",
+          "direction": "input",
+          "spatial": {
+            "frame_id": "site",
+            "anchor": [8.0, 2.0],
+            "orientation": [180.0],
+            "compatibility": ["ground_route"]
+          }
+        }
+      }
+    },
+    {
+      "id": "corridor-asset",
+      "type_ref": "metis.spatial.Corridor@1",
+      "name": "Reserved corridor"
+    },
+    {
+      "id": "route-asset",
+      "type_ref": "metis.spatial.Route@1",
+      "name": "Proposed routed connection"
+    }
+  ],
+  "relations": [
+    {
+      "id": "route-through-corridor",
+      "type_ref": "routes_through",
+      "source_entity_id": "route-asset",
+      "target_entity_id": "corridor-asset"
+    },
+    {
+      "id": "route-reserves-corridor",
+      "type_ref": "reserves",
+      "source_entity_id": "route-asset",
+      "target_entity_id": "corridor-asset",
+      "confirmation_state": "proposed"
+    }
+  ],
+  "spatial": {
+    "profile_version": "twingraph-spatial/0.1",
+    "frames": [
+      {
+        "id": "site",
+        "dimensions": 2,
+        "distance_unit": "m",
+        "angle_unit": "deg",
+        "origin_convention": "right_handed",
+        "axis_labels": ["east", "north"]
+      }
+    ],
+    "placements": [
+      {
+        "entity_id": "origin",
+        "frame_id": "site",
+        "position": [2.0, 2.0],
+        "orientation": [0.0],
+        "footprint": {"kind": "polygon", "frame_id": "site", "vertices": [[0.0, 0.0], [4.0, 0.0], [4.0, 4.0], [0.0, 4.0]]},
+        "height": {"value": 3.0, "unit": "m"},
+        "required_clearance": {"kind": "bounding_box", "frame_id": "site", "minimum": [-1.0, -1.0], "maximum": [5.0, 5.0]}
+      },
+      {
+        "entity_id": "destination",
+        "frame_id": "site",
+        "position": [10.0, 2.0],
+        "orientation": [180.0],
+        "footprint": {"kind": "polygon", "frame_id": "site", "vertices": [[8.0, 0.0], [12.0, 0.0], [12.0, 4.0], [8.0, 4.0]]},
+        "height": {"value": 3.0, "unit": "m"},
+        "required_clearance": {"kind": "bounding_box", "frame_id": "site", "minimum": [7.0, -1.0], "maximum": [13.0, 5.0]}
+      }
+    ],
+    "regions": [
+      {
+        "id": "corridor",
+        "role": "corridor",
+        "geometry": {"kind": "polygon", "frame_id": "site", "vertices": [[4.0, 1.0], [8.0, 1.0], [8.0, 3.0], [4.0, 3.0]]}
+      }
+    ],
+    "routes": [
+      {
+        "id": "route-1",
+        "source_entity_id": "origin",
+        "source_port": "outbound",
+        "target_entity_id": "destination",
+        "target_port": "inbound",
+        "path": {"kind": "polyline", "frame_id": "site", "vertices": [[4.0, 2.0], [6.0, 2.0], [8.0, 2.0]]},
+        "corridor_id": "corridor",
+        "capacity": {"value": 20.0, "unit": "item/h"},
+        "compatibility": ["ground_route"],
+        "state": "proposed"
+      }
+    ],
+    "reservations": [
+      {
+        "id": "corridor-reservation",
+        "geometry": {"kind": "polygon", "frame_id": "site", "vertices": [[4.0, 1.0], [8.0, 1.0], [8.0, 3.0], [4.0, 3.0]]},
+        "reserved_by_entity_id": "route-asset",
+        "route_id": "route-1",
+        "state": "proposed",
+        "evidence_refs": []
+      }
+    ],
+    "extensions": {}
+  },
+  "extensions": {}
+}

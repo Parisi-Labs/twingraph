@@ -97,6 +97,12 @@ class InMemoryTypeRegistry:
             self.register(td)
 
     def register(self, type_def: TypeDef) -> None:
+        existing = self._by_ref.get(type_def.type_ref)
+        if existing is not None and existing != type_def:
+            raise ValueError(
+                f"conflicting TypeDef registration for '{type_def.type_ref}'; "
+                "type packs must not redefine an existing type_ref"
+            )
         self._by_ref[type_def.type_ref] = type_def
 
     def has(self, type_ref: str) -> bool:
@@ -237,6 +243,50 @@ RELATION_TYPE_PACK = TypePack(
     name="metis.relation.core@1",
     description="Core operational relation verbs shared by power and operations twins.",
     type_defs=_relation_type_defs(),
+)
+
+
+SPATIAL_TYPE_PACK = TypePack(
+    name="metis.spatial.topology@1",
+    description=(
+        "Optional spatial vocabulary for regions, corridors, routes, reservations, "
+        "and their relations."
+    ),
+    type_defs=(
+        TypeDef(type_ref="metis.spatial.Region@1", kind="entity", title="Spatial region"),
+        TypeDef(
+            type_ref="metis.spatial.Corridor@1",
+            kind="entity",
+            title="Reserved spatial corridor",
+            ports=("entry", "exit", "route"),
+        ),
+        TypeDef(
+            type_ref="metis.spatial.Route@1",
+            kind="entity",
+            title="Spatial route",
+            ports=("origin", "destination", "corridor"),
+        ),
+        TypeDef(
+            type_ref="metis.spatial.Reservation@1",
+            kind="entity",
+            title="Spatial reservation",
+            ports=("subject", "region", "route"),
+        ),
+        *tuple(
+            TypeDef(
+                type_ref=f"metis.relation.{name}@1",
+                kind="relation",
+                title=name.replace("_", " "),
+            )
+            for name in (
+                "adjacent_to",
+                "overlaps",
+                "intersects",
+                "routes_through",
+                "reserves",
+            )
+        ),
+    ),
 )
 
 
@@ -820,6 +870,7 @@ __all__ = [
     "PLATFORM_ANALYSIS_TYPE_PACK",
     "POWER_TYPE_PACK",
     "RELATION_TYPE_PACK",
+    "SPATIAL_TYPE_PACK",
     "ActionSpec",
     "CallableResolver",
     "IOContract",

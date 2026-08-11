@@ -21,10 +21,10 @@ def _compile(graph, model_registry, **kw):
     )
 
 
-def test_default_table_and_version_unchanged():
+def test_default_operational_unit_table_version():
     # The default table is now the operational core table, but intentionally still
     # excludes arbitrary adopter-specific units such as cycles.
-    assert UNIT_TABLE_VERSION == "ucum-subset/0.4"
+    assert UNIT_TABLE_VERSION == "ucum-subset/0.5"
     assert DEFAULT_UNIT_REGISTRY.is_known("kV")
     assert DEFAULT_UNIT_REGISTRY.is_known("request/s")
     assert DEFAULT_UNIT_REGISTRY.is_known("USD/MW")
@@ -32,6 +32,8 @@ def test_default_table_and_version_unchanged():
     assert DEFAULT_UNIT_REGISTRY.compatible("kW", "MW")
     assert DEFAULT_UNIT_REGISTRY.compatible("$/MW", "USD/MW")
     assert DEFAULT_UNIT_REGISTRY.compatible("probability", "ratio")
+    assert DEFAULT_UNIT_REGISTRY.is_known("ft")
+    assert not DEFAULT_UNIT_REGISTRY.is_known("rad")
     assert "cycles" not in CANONICAL_UNITS
     assert not DEFAULT_UNIT_REGISTRY.is_known("cycles")
 

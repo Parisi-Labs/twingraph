@@ -433,6 +433,46 @@
       "title": "BindingValidation",
       "type": "object"
     },
+    "BoundingBoxGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "bounding_box",
+          "default": "bounding_box",
+          "title": "Kind",
+          "type": "string"
+        },
+        "frame_id": {
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "minimum": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Minimum",
+          "type": "array"
+        },
+        "maximum": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Maximum",
+          "type": "array"
+        }
+      },
+      "required": [
+        "frame_id",
+        "minimum",
+        "maximum"
+      ],
+      "title": "BoundingBoxGeometry",
+      "type": "object"
+    },
     "CandidateState": {
       "enum": [
         "proposed",
@@ -627,6 +667,75 @@
         "value"
       ],
       "title": "ConstraintExpression",
+      "type": "object"
+    },
+    "CoordinateFrame": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "dimensions": {
+          "enum": [
+            2,
+            3
+          ],
+          "title": "Dimensions",
+          "type": "integer"
+        },
+        "distance_unit": {
+          "default": "m",
+          "title": "Distance Unit",
+          "type": "string"
+        },
+        "angle_unit": {
+          "default": "deg",
+          "title": "Angle Unit",
+          "type": "string"
+        },
+        "origin_convention": {
+          "default": "right_handed",
+          "title": "Origin Convention",
+          "type": "string"
+        },
+        "axis_labels": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Axis Labels",
+          "type": "array"
+        },
+        "parent_frame_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Frame Id"
+        },
+        "parent_transform": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FrameTransform"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "dimensions"
+      ],
+      "title": "CoordinateFrame",
       "type": "object"
     },
     "CrossGraphBinding": {
@@ -916,6 +1025,99 @@
       "title": "Entity",
       "type": "object"
     },
+    "EntityPlacement": {
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": {
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "frame_id": {
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "position": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Position",
+          "type": "array"
+        },
+        "orientation": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "title": "Orientation",
+          "type": "array"
+        },
+        "footprint": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "bounding_box": "#/$defs/BoundingBoxGeometry",
+                  "point": "#/$defs/PointGeometry",
+                  "polygon": "#/$defs/PolygonGeometry",
+                  "polyline": "#/$defs/PolylineGeometry"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/PointGeometry"
+                },
+                {
+                  "$ref": "#/$defs/BoundingBoxGeometry"
+                },
+                {
+                  "$ref": "#/$defs/PolygonGeometry"
+                },
+                {
+                  "$ref": "#/$defs/PolylineGeometry"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Footprint"
+        },
+        "height": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "required_clearance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BoundingBoxGeometry"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "entity_id",
+        "frame_id",
+        "position"
+      ],
+      "title": "EntityPlacement",
+      "type": "object"
+    },
     "EntityPort": {
       "additionalProperties": false,
       "description": "A concrete interface exposed by an entity instance.\n\n``kind`` should match one of the entity type's declared port kinds when the\ntype registry declares ports. The dict key on ``Entity.ports`` is the local\nport id used by relations, so a plant can expose ``poi_34_5kv`` while the\ntype-level kind remains ``ac_power``.",
@@ -976,6 +1178,17 @@
           ],
           "default": null,
           "title": "Description"
+        },
+        "spatial": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SpatialPort"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -1066,6 +1279,35 @@
         "source_ref"
       ],
       "title": "Evidence",
+      "type": "object"
+    },
+    "FrameTransform": {
+      "additionalProperties": false,
+      "properties": {
+        "translation": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Translation",
+          "type": "array"
+        },
+        "rotation": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Rotation",
+          "type": "array"
+        }
+      },
+      "required": [
+        "translation",
+        "rotation"
+      ],
+      "title": "FrameTransform",
       "type": "object"
     },
     "GraphLayer": {
@@ -1485,6 +1727,100 @@
       "title": "PatchStatus",
       "type": "string"
     },
+    "PointGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "point",
+          "default": "point",
+          "title": "Kind",
+          "type": "string"
+        },
+        "frame_id": {
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "coordinates": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Coordinates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "frame_id",
+        "coordinates"
+      ],
+      "title": "PointGeometry",
+      "type": "object"
+    },
+    "PolygonGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "polygon",
+          "default": "polygon",
+          "title": "Kind",
+          "type": "string"
+        },
+        "frame_id": {
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "vertices": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "minItems": 3,
+          "title": "Vertices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "frame_id",
+        "vertices"
+      ],
+      "title": "PolygonGeometry",
+      "type": "object"
+    },
+    "PolylineGeometry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "polyline",
+          "default": "polyline",
+          "title": "Kind",
+          "type": "string"
+        },
+        "frame_id": {
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "vertices": {
+          "items": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "minItems": 2,
+          "title": "Vertices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "frame_id",
+        "vertices"
+      ],
+      "title": "PolylineGeometry",
+      "type": "object"
+    },
     "Provenance": {
       "additionalProperties": false,
       "properties": {
@@ -1568,6 +1904,26 @@
         "source_kind"
       ],
       "title": "Provenance",
+      "type": "object"
+    },
+    "Quantity": {
+      "additionalProperties": false,
+      "description": "A typed scalar with an explicit unit (spec §9.5).\n\nProperties may carry EITHER a bare scalar OR a Quantity; units are enforced\nat compile against the type registry, not at parse.",
+      "properties": {
+        "value": {
+          "title": "Value",
+          "type": "number"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "unit"
+      ],
+      "title": "Quantity",
       "type": "object"
     },
     "QueryPolicy": {
@@ -2328,6 +2684,403 @@
       "title": "SetProperty",
       "type": "object"
     },
+    "SpatialPort": {
+      "additionalProperties": false,
+      "description": "Anchor and reach metadata composed onto an existing ``EntityPort``.",
+      "properties": {
+        "frame_id": {
+          "title": "Frame Id",
+          "type": "string"
+        },
+        "anchor": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 2,
+          "title": "Anchor",
+          "type": "array"
+        },
+        "orientation": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "title": "Orientation",
+          "type": "array"
+        },
+        "reach": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "bounding_box": "#/$defs/BoundingBoxGeometry",
+                  "point": "#/$defs/PointGeometry",
+                  "polygon": "#/$defs/PolygonGeometry",
+                  "polyline": "#/$defs/PolylineGeometry"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/PointGeometry"
+                },
+                {
+                  "$ref": "#/$defs/BoundingBoxGeometry"
+                },
+                {
+                  "$ref": "#/$defs/PolygonGeometry"
+                },
+                {
+                  "$ref": "#/$defs/PolylineGeometry"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reach"
+        },
+        "compatibility": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Compatibility",
+          "type": "array"
+        },
+        "required_clearance": {
+          "anyOf": [
+            {
+              "discriminator": {
+                "mapping": {
+                  "bounding_box": "#/$defs/BoundingBoxGeometry",
+                  "point": "#/$defs/PointGeometry",
+                  "polygon": "#/$defs/PolygonGeometry",
+                  "polyline": "#/$defs/PolylineGeometry"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/PointGeometry"
+                },
+                {
+                  "$ref": "#/$defs/BoundingBoxGeometry"
+                },
+                {
+                  "$ref": "#/$defs/PolygonGeometry"
+                },
+                {
+                  "$ref": "#/$defs/PolylineGeometry"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Required Clearance"
+        }
+      },
+      "required": [
+        "frame_id",
+        "anchor"
+      ],
+      "title": "SpatialPort",
+      "type": "object"
+    },
+    "SpatialRegion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "geometry": {
+          "discriminator": {
+            "mapping": {
+              "bounding_box": "#/$defs/BoundingBoxGeometry",
+              "point": "#/$defs/PointGeometry",
+              "polygon": "#/$defs/PolygonGeometry",
+              "polyline": "#/$defs/PolylineGeometry"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PointGeometry"
+            },
+            {
+              "$ref": "#/$defs/BoundingBoxGeometry"
+            },
+            {
+              "$ref": "#/$defs/PolygonGeometry"
+            },
+            {
+              "$ref": "#/$defs/PolylineGeometry"
+            }
+          ],
+          "title": "Geometry"
+        },
+        "role": {
+          "default": "region",
+          "enum": [
+            "region",
+            "corridor",
+            "exclusion_zone"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "geometry"
+      ],
+      "title": "SpatialRegion",
+      "type": "object"
+    },
+    "SpatialReservation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "geometry": {
+          "discriminator": {
+            "mapping": {
+              "bounding_box": "#/$defs/BoundingBoxGeometry",
+              "point": "#/$defs/PointGeometry",
+              "polygon": "#/$defs/PolygonGeometry",
+              "polyline": "#/$defs/PolylineGeometry"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PointGeometry"
+            },
+            {
+              "$ref": "#/$defs/BoundingBoxGeometry"
+            },
+            {
+              "$ref": "#/$defs/PolygonGeometry"
+            },
+            {
+              "$ref": "#/$defs/PolylineGeometry"
+            }
+          ],
+          "title": "Geometry"
+        },
+        "reserved_by_entity_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reserved By Entity Id"
+        },
+        "route_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Route Id"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "state": {
+          "default": "proposed",
+          "enum": [
+            "proposed",
+            "confirmed",
+            "released"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "geometry"
+      ],
+      "title": "SpatialReservation",
+      "type": "object"
+    },
+    "SpatialRoute": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "source_entity_id": {
+          "title": "Source Entity Id",
+          "type": "string"
+        },
+        "source_port": {
+          "title": "Source Port",
+          "type": "string"
+        },
+        "target_entity_id": {
+          "title": "Target Entity Id",
+          "type": "string"
+        },
+        "target_port": {
+          "title": "Target Port",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/PolylineGeometry"
+        },
+        "corridor_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Corridor Id"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "compatibility": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Compatibility",
+          "type": "array"
+        },
+        "state": {
+          "default": "proposed",
+          "enum": [
+            "proposed",
+            "reserved",
+            "observed"
+          ],
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "source_entity_id",
+        "source_port",
+        "target_entity_id",
+        "target_port",
+        "path"
+      ],
+      "title": "SpatialRoute",
+      "type": "object"
+    },
+    "SpatialTopology": {
+      "additionalProperties": false,
+      "properties": {
+        "profile_version": {
+          "const": "twingraph-spatial/0.1",
+          "default": "twingraph-spatial/0.1",
+          "title": "Profile Version",
+          "type": "string"
+        },
+        "frames": {
+          "items": {
+            "$ref": "#/$defs/CoordinateFrame"
+          },
+          "title": "Frames",
+          "type": "array"
+        },
+        "placements": {
+          "items": {
+            "$ref": "#/$defs/EntityPlacement"
+          },
+          "title": "Placements",
+          "type": "array"
+        },
+        "regions": {
+          "items": {
+            "$ref": "#/$defs/SpatialRegion"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "routes": {
+          "items": {
+            "$ref": "#/$defs/SpatialRoute"
+          },
+          "title": "Routes",
+          "type": "array"
+        },
+        "reservations": {
+          "items": {
+            "$ref": "#/$defs/SpatialReservation"
+          },
+          "title": "Reservations",
+          "type": "array"
+        },
+        "extensions": {
+          "additionalProperties": true,
+          "title": "Extensions",
+          "type": "object"
+        }
+      },
+      "title": "SpatialTopology",
+      "type": "object"
+    },
     "TwinGraph": {
       "additionalProperties": false,
       "description": "A versioned, hashable representation of one operating system (§9.2).",
@@ -2476,6 +3229,17 @@
           },
           "title": "Evidence",
           "type": "array"
+        },
+        "spatial": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SpatialTopology"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "extensions": {
           "additionalProperties": true,

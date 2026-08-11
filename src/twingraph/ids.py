@@ -18,6 +18,8 @@ import time
 CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 _CROCKFORD_INDEX = {c: i for i, c in enumerate(CROCKFORD)}
 
+# Authoring ids and ULIDs are both valid TwinGraph object identifiers.
+ID_PATTERN = r"^[A-Za-z0-9_.:-]+$"
 ULID_RE = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
 
 # Type alias — a ULID is just a string on the wire.

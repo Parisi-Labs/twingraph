@@ -18,9 +18,9 @@ from .canonical import canonical_json, content_hash, hash_input
 from .compile import CompileResult, compile_graph
 from .document import TwinGraph
 from .errors import CODES, Diagnostic
-from .ids import new_ulid
+from .ids import ID_PATTERN, new_ulid
 from .patch import SemanticPatch
-from .primitives import ID_PATTERN, Provenance
+from .primitives import Provenance
 from .programs import ProgramRegistry
 from .registry import ModelCatalog, TypeRegistry
 from .units import UnitRegistry
