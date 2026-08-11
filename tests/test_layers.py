@@ -163,11 +163,30 @@ def test_bundle_hash_excludes_envelope_and_embedded_graph_volatility():
     second.bundle_id = "reminted-bundle"
     second.layers[0].graph.created_at = datetime(2030, 1, 1, tzinfo=UTC)
     second.layers[0].graph.content_hash = "sha256:declared-but-nonsemantic"
-    second.layers[0].graph.version_id = "reminted-unreferenced-version"
     assert first.compute_content_hash() == second.compute_content_hash()
 
-    second.bindings[0].target.version_id = "different-version-assertion"
+    second.layers[0].graph.version_id = "different-layer-version"
     assert first.compute_content_hash() != second.compute_content_hash()
+
+
+def test_bundle_hash_changes_when_version_pin_breaks_reference_resolution(model_registry):
+    good = _bundle()
+    bad = good.model_copy(deep=True)
+    bad.layers[0].graph.version_id = "renamed-version"
+
+    assert good.compute_content_hash() != bad.compute_content_hash()
+    good_result = tg.compile_bundle(
+        good,
+        type_registry=tg.BUILTIN_TYPE_REGISTRY,
+        model_registry=model_registry,
+    )
+    bad_result = tg.compile_bundle(
+        bad,
+        type_registry=tg.BUILTIN_TYPE_REGISTRY,
+        model_registry=model_registry,
+    )
+    assert good_result.ok
+    assert any(item.code == CODES.DANGLING_REF for item in bad_result.report.errors())
 
 
 def test_bundle_reports_dangling_overlay_delta_and_evidence_refs(model_registry):
